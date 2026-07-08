@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
-import { STATUSES } from './constants'
+import { STATUSES, ASSIGNEES } from './constants'
 
 export default function EditModal({ prospect, onClose, onSaved }) {
   const [form, setForm] = useState({ ...prospect })
@@ -35,6 +35,7 @@ export default function EditModal({ prospect, onClose, onSaved }) {
       statut: form.statut,
       lead_chaud: form.lead_chaud,
       stand_by: form.stand_by,
+      assigned_to: form.assigned_to || null,
       action_commentaire,
       derniere_maj: new Date().toISOString().slice(0, 10),
     }
@@ -75,8 +76,14 @@ export default function EditModal({ prospect, onClose, onSaved }) {
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
-          <label>Contact
+          <label>Contact (nom de la personne)
             <input value={form.contact || ''} onChange={(e) => set('contact', e.target.value)} />
+          </label>
+          <label>Assigné à
+            <select value={form.assigned_to || ''} onChange={(e) => set('assigned_to', e.target.value)}>
+              <option value="">—</option>
+              {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
           </label>
           <label>Email
             <input value={form.email || ''} onChange={(e) => set('email', e.target.value)} />

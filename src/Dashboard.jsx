@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { nameSort } from './constants'
 
 function daysAgo(dateStr) {
   if (!dateStr) return Infinity
@@ -8,7 +9,7 @@ function daysAgo(dateStr) {
   return (Date.now() - d.getTime()) / (1000 * 3600 * 24)
 }
 
-export default function Dashboard({ prospects }) {
+export default function Dashboard({ prospects, onOpen }) {
   const [history, setHistory] = useState([])
 
   useEffect(() => {
@@ -21,10 +22,10 @@ export default function Dashboard({ prospects }) {
           .from('status_history')
           .select('statut, changed_at')
           .range(from, from + PAGE - 1)
-        if (error || !data) break
+        if (error || !data || data.length === 0) break
         all = all.concat(data)
+        from += data.length
         if (data.length < PAGE) break
-        from += PAGE
       }
       setHistory(all)
     }
@@ -38,11 +39,9 @@ export default function Dashboard({ prospects }) {
     const signes = prospects.filter((p) => p.statut === 'Devis signé' || p.statut === 'Facturé').length
     const leadsChauds = prospects.filter((p) => p.lead_chaud).length
     const standBy = prospects.filter((p) => p.stand_by).length
-    const devisEnvoyes = prospects.filter((p) => p.statut === 'Devis envoyé').length
-    const propalesEnvoyees = prospects.filter((p) => p.statut === 'Propale envoyée').length
-    const relances = prospects.filter((p) => p.statut === 'Mail envoyé' && daysAgo(p.derniere_maj) > 14).length
+    const relances = prospects.filter((p) => p.statut === 'Propale envoyée' && daysAgo(p.derniere_maj) > 14).length
     const tauxConversion = total ? ((signes / total) * 100).toFixed(1) : '0.0'
-    return { total, b2b, b2b2c, signes, leadsChauds, standBy, devisEnvoyes, propalesEnvoyees, relances, tauxConversion }
+    return { total, b2b, b2b2c, signes, leadsChauds, standBy, relances, tauxConversion }
   }, [prospects])
 
   const monthlyData = useMemo(() => {
@@ -65,9 +64,9 @@ export default function Dashboard({ prospects }) {
     return Object.values(buckets)
   }, [history])
 
-  const leadsChaudsList = prospects.filter((p) => p.lead_chaud)
-  const standByList = prospects.filter((p) => p.stand_by)
-  const devisEnvoyesList = prospects.filter((p) => p.statut === 'Devis envoyé')
+  const leadsChaudsList = prospects.filter((p) => p.lead_chaud).sort(nameSort)
+  const standByList = prospects.filter((p) => p.stand_by).sort(nameSort)
+  const devisEnvoyesList = prospects.filter((p) => p.statut === 'Devis envoyé').sort(nameSort)
 
   return (
     <div className="dashboard">
@@ -79,7 +78,7 @@ export default function Dashboard({ prospects }) {
         <div className="kpi-card"><div className="kpi-value">{kpis.tauxConversion}%</div><div className="kpi-label">Taux de conversion</div></div>
         <div className="kpi-card warn"><div className="kpi-value">{kpis.leadsChauds}</div><div className="kpi-label">Leads chauds</div></div>
         <div className="kpi-card"><div className="kpi-value">{kpis.standBy}</div><div className="kpi-label">Stand by</div></div>
-        <div className="kpi-card danger"><div className="kpi-value">{kpis.relances}</div><div className="kpi-label">Relances en retard (+14j)</div></div>
+        <div className="kpi-card danger"><div className="kpi-value">{kpis.relances}</div><div className="kpi-label">Propales en retard (+14j)</div></div>
       </div>
 
       <div className="chart-card">
@@ -96,7 +95,7 @@ export default function Dashboard({ prospects }) {
             <Line type="monotone" dataKey="Devis envoyés" stroke="#B5603A" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
-        <p className="hint">Basé sur l'historique des changements de statut. Pour les prospects déjà présents avant la mise en place de l'outil, seul le statut le plus récent est connu (une seule entrée d'historique).</p>
+        <p className="hint">Basé sur l'historique des changements de statut. Pour les prospects déjà présents avant la mise en place de l'outil, seul le statut le plus récent est connu.</p>
       </div>
 
       <div className="pipe-grid">
@@ -104,7 +103,9 @@ export default function Dashboard({ prospects }) {
           <h3>Pipe des leads chauds ({leadsChaudsList.length})</h3>
           <ul>
             {leadsChaudsList.slice(0, 30).map((p) => (
-              <li key={p.id}><strong>{p.nom}</strong><span>{(p.action_commentaire || '').split('\n')[0] || 'Aucune action notée'}</span></li>
+              <li key={p.id} className="clickable" onClick={() => onOpen(p)}>
+                <strong>{p.nom}</strong><span>{(p.action_commentaire || '').split('\n')[0] || 'Aucune action notée'}</span>
+              </li>
             ))}
             {leadsChaudsList.length === 0 && <li className="empty">Aucun lead chaud pour l'instant.</li>}
           </ul>
@@ -113,7 +114,9 @@ export default function Dashboard({ prospects }) {
           <h3>Pipe des devis envoyés ({devisEnvoyesList.length})</h3>
           <ul>
             {devisEnvoyesList.slice(0, 30).map((p) => (
-              <li key={p.id}><strong>{p.nom}</strong><span>MAJ : {p.derniere_maj || '—'}</span></li>
+              <li key={p.id} className="clickable" onClick={() => onOpen(p)}>
+                <strong>{p.nom}</strong><span>MAJ : {p.derniere_maj || '—'}</span>
+              </li>
             ))}
             {devisEnvoyesList.length === 0 && <li className="empty">Aucun devis envoyé en cours.</li>}
           </ul>
@@ -122,7 +125,9 @@ export default function Dashboard({ prospects }) {
           <h3>Stand by ({standByList.length})</h3>
           <ul>
             {standByList.slice(0, 30).map((p) => (
-              <li key={p.id}><strong>{p.nom}</strong><span>{(p.action_commentaire || '').split('\n')[0] || 'Aucune action notée'}</span></li>
+              <li key={p.id} className="clickable" onClick={() => onOpen(p)}>
+                <strong>{p.nom}</strong><span>{(p.action_commentaire || '').split('\n')[0] || 'Aucune action notée'}</span>
+              </li>
             ))}
             {standByList.length === 0 && <li className="empty">Aucun prospect en stand by.</li>}
           </ul>

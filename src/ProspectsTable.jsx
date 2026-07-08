@@ -1,19 +1,19 @@
 import { useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { STATUSES, STATUS_COLORS } from './constants'
+import { STATUSES, STATUS_COLORS, ASSIGNEES, nameSort } from './constants'
 import ActionCell from './ActionCell'
 import ExportButton from './ExportButton'
 
-const PAGE_SIZE = 40
+const PAGE_SIZE = 100
 
 export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate }) {
-  const [filters, setFilters] = useState({ search: '', type: '', region: '', departement: '', statut: '', onlyFlagged: false })
+  const [filters, setFilters] = useState({ search: '', type: '', region: '', departement: '', statut: '', assignedTo: '', onlyFlagged: false })
   const [page, setPage] = useState(0)
 
   function set(field, value) {
     setFilters((f) => {
       const next = { ...f, [field]: value }
-      if (field === 'region') next.departement = '' // reset dependent filter
+      if (field === 'region') next.departement = ''
       return next
     })
     setPage(0)
@@ -43,6 +43,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         if (filters.region && p.region !== filters.region) return false
         if (filters.departement && p.departement !== filters.departement) return false
         if (filters.statut && p.statut !== filters.statut) return false
+        if (filters.assignedTo && p.assigned_to !== filters.assignedTo) return false
         if (filters.onlyFlagged && !p.lead_chaud && !p.stand_by && !p.doublon_potentiel && !p.a_verifier) return false
         if (s) {
           const hay = [p.nom, p.contact, p.email, p.ville, p.region].filter(Boolean).join(' ').toLowerCase()
@@ -50,7 +51,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         }
         return true
       })
-      .sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
+      .sort(nameSort)
   }, [prospects, filters])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -89,6 +90,10 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             <option value="">Tous statuts</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
+          <select value={filters.assignedTo} onChange={(e) => set('assignedTo', e.target.value)}>
+            <option value="">Tous responsables</option>
+            {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
           <label className="checkbox-inline">
             <input type="checkbox" checked={filters.onlyFlagged} onChange={(e) => set('onlyFlagged', e.target.checked)} />
             Lead chaud / Stand by / à vérifier
@@ -106,15 +111,17 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             <tr>
               <th>Nom</th>
               <th>Statut</th>
-              <th>Chaud</th>
-              <th>Stand by</th>
+              <th>Assigné à</th>
               <th>Dernière MAJ</th>
               <th>Téléphone</th>
               <th>Mail</th>
-              <th>FFT Engagé</th>
               <th>Département</th>
               <th>Région</th>
               <th>Action / Commentaire</th>
+              <th>Lead chaud</th>
+              <th>Stand by</th>
+              <th>FFT Engagé</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -131,19 +138,26 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                     {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </td>
+                <td>
+                  <select value={p.assigned_to || ''} onChange={(e) => updateField(p, { assigned_to: e.target.value || null })}>
+                    <option value="">—</option>
+                    {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </td>
+                <td>{p.derniere_maj || '—'}</td>
+                <td>{p.telephone || '—'}</td>
+                <td>{p.email || '—'}</td>
+                <td>{p.departement || '—'}</td>
+                <td>{p.region || '—'}</td>
+                <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
                 <td className="cell-check">
                   <input type="checkbox" checked={!!p.lead_chaud} onChange={(e) => updateField(p, { lead_chaud: e.target.checked })} />
                 </td>
                 <td className="cell-check">
                   <input type="checkbox" checked={!!p.stand_by} onChange={(e) => updateField(p, { stand_by: e.target.checked })} />
                 </td>
-                <td>{p.derniere_maj || '—'}</td>
-                <td>{p.telephone || '—'}</td>
-                <td>{p.email || '—'}</td>
                 <td>{p.fft_engage || '—'}</td>
-                <td>{p.departement || '—'}</td>
-                <td>{p.region || '—'}</td>
-                <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
+                <td><button className="link-btn" onClick={() => onOpen(p)}>Fiche</button></td>
               </tr>
             ))}
           </tbody>

@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient'
 import Login from './Login'
 import ProspectsTable from './ProspectsTable'
 import Dashboard from './Dashboard'
+import SimpleKanban from './SimpleKanban'
 import StaleFollowups from './StaleFollowups'
 import EditModal from './EditModal'
 import ImportBanner from './ImportBanner'
@@ -10,13 +11,12 @@ import Settings from './Settings'
 import { TYPES_B2B, TYPES_B2B2C } from './constants'
 import './App.css'
 
-const PAGE_FETCH = 1000
-
 export default function App() {
   const [session, setSession] = useState(null)
   const [checkingSession, setCheckingSession] = useState(true)
   const [prospects, setProspects] = useState([])
   const [loading, setLoading] = useState(false)
+  const [fetchWarning, setFetchWarning] = useState('')
   const [tab, setTab] = useState('dashboard')
   const [selected, setSelected] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -33,20 +33,32 @@ export default function App() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
+  // Fetch robuste : avance du nombre de lignes réellement reçu (pas d'une taille de page
+  // supposée), et vérifie le total contre count('exact') pour ne rien perdre en route.
   const fetchAll = useCallback(async () => {
     setLoading(true)
+    setFetchWarning('')
+    const { count } = await supabase.from('prospects').select('id', { count: 'exact', head: true })
     let all = []
     let from = 0
+    let guard = 0
     while (true) {
+      guard += 1
+      if (guard > 200) break
       const { data, error } = await supabase
         .from('prospects')
         .select('*')
-        .range(from, from + PAGE_FETCH - 1)
-        .order('nom', { ascending: true })
-      if (error) { console.error(error); break }
+        .order('id', { ascending: true })
+        .range(from, from + 999)
+      if (error) { console.error(error); setFetchWarning('Erreur de chargement : ' + error.message); break }
+      if (!data || data.length === 0) break
       all = all.concat(data)
-      if (data.length < PAGE_FETCH) break
-      from += PAGE_FETCH
+      from += data.length
+      if (typeof count === 'number' && all.length >= count) break
+      if (data.length < 1) break
+    }
+    if (typeof count === 'number' && all.length !== count) {
+      setFetchWarning(`Attention : ${all.length} lignes chargées sur ${count} au total. Recharge la page.`)
     }
     setProspects(all)
     setLoading(false)
@@ -56,7 +68,7 @@ export default function App() {
     if (session) fetchAll()
   }, [session, fetchAll])
 
-  // Realtime: reflect changes made from other accounts instantly
+  // Réalimentation en direct : toute modification faite par un autre compte est reflétée instantanément
   useEffect(() => {
     if (!session) return
     const channel = supabase
@@ -95,7 +107,9 @@ export default function App() {
   if (!loading && prospects.length === 0) {
     mainContent = <ImportBanner onDone={fetchAll} />
   } else if (tab === 'dashboard') {
-    mainContent = <Dashboard prospects={prospects} />
+    mainContent = <Dashboard prospects={prospects} onOpen={setSelected} />
+  } else if (tab === 'kanban') {
+    mainContent = <SimpleKanban prospects={prospects} onOpen={setSelected} />
   } else if (tab === 'b2b') {
     mainContent = <ProspectsTable prospects={b2bProspects} types={TYPES_B2B} segmentLabel="B2B" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} />
   } else if (tab === 'b2b2c') {
@@ -111,11 +125,13 @@ export default function App() {
         <h1>CRM</h1>
         <nav className="tab-nav">
           <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}>Dashboard</button>
+          <button className={tab === 'kanban' ? 'active' : ''} onClick={() => setTab('kanban')}>Kanban</button>
           <button className={tab === 'b2b' ? 'active' : ''} onClick={() => setTab('b2b')}>B2B</button>
           <button className={tab === 'b2b2c' ? 'active' : ''} onClick={() => setTab('b2b2c')}>B2B2C</button>
           <button className={tab === 'relances' ? 'active' : ''} onClick={() => setTab('relances')}>Relances en retard</button>
         </nav>
         {loading && <span className="loading-pill">Chargement...</span>}
+        {fetchWarning && <span className="loading-pill warn-pill">{fetchWarning}</span>}
         <div className="user-info header-user">
           {session.user.email} · <button className="link-btn" onClick={() => setShowSettings(true)}>Paramètres</button> · <button className="link-btn" onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
         </div>

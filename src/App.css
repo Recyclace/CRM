@@ -196,3 +196,9 @@
 .pipe-card li.empty { color: #948c7f; font-style: italic; }
 
 .modal-checkboxes { display: flex; gap: 20px; margin-bottom: 14px; }
+
+.warn-pill { background: rgba(197,48,48,0.25) !important; }
+.pipe-card li.clickable { cursor: pointer; }
+.pipe-card li.clickable:hover { background: #FAF7F1; }
+.list-view { flex: 1; overflow-y: auto; }
+.prospects-table-wrap { min-height: 0; }

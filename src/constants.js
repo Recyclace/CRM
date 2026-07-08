@@ -21,3 +21,15 @@ export const STATUS_COLORS = {
 
 export const TYPES_B2B = ["Ligue / Comité", "Club de tennis", "Club de padel"]
 export const TYPES_B2B2C = ["Magasin spécialisé", "Grande distribution"]
+export const ASSIGNEES = ["Pierre", "Iouri", "Aurélie"]
+
+// Tri alphabétique, les noms commençant par un chiffre passent à la fin
+export function nameSort(a, b) {
+  const an = (a.nom || '').trim()
+  const bn = (b.nom || '').trim()
+  const aDigit = /^[0-9]/.test(an)
+  const bDigit = /^[0-9]/.test(bn)
+  if (aDigit && !bDigit) return 1
+  if (!aDigit && bDigit) return -1
+  return an.localeCompare(bn, 'fr', { sensitivity: 'base' })
+}
