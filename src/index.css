@@ -1,7 +1,7 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body {
-  font: 14px/1.4 -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  background: #f5f6f8;
-  color: #1a1d23;
+  font: 14px/1.4 'Poppins', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #F7F3EC;
+  color: #13302A;
 }

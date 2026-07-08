@@ -1,6 +1,6 @@
 import { SEGMENTS, TYPES } from './constants'
 
-export default function FiltersBar({ filters, setFilters, regions, view, setView, total, filteredCount, userEmail, onLogout }) {
+export default function FiltersBar({ filters, setFilters, regions, view, setView, total, filteredCount, userEmail, onLogout, onSettings }) {
   function set(field, value) {
     setFilters((f) => ({ ...f, [field]: value }))
   }
@@ -38,7 +38,7 @@ export default function FiltersBar({ filters, setFilters, regions, view, setView
         </div>
         <div className="count-info">{filteredCount} / {total} prospects</div>
         <div className="user-info">
-          {userEmail} · <button className="link-btn" onClick={onLogout}>Se déconnecter</button>
+          {userEmail} · <button className="link-btn" onClick={onSettings}>Paramètres</button> · <button className="link-btn" onClick={onLogout}>Se déconnecter</button>
         </div>
       </div>
     </div>

@@ -2,37 +2,33 @@
 
 Application web (React + Vite + Supabase) pour le suivi commercial B2B / B2B2C.
 
-## Déploiement sur Vercel (toi-même)
+## Mise à jour (v2)
 
-1. Installe les dépendances :
-   ```
-   npm install
-   ```
-2. Connecte-toi à Vercel (si ce n'est pas déjà fait) :
-   ```
-   npx vercel login
-   ```
-3. Déploie :
-   ```
-   npx vercel --prod
-   ```
-   Accepte les options par défaut (le projet est un site Vite standard, Vercel le détecte automatiquement : build command `npm run build`, output `dist`).
+- Connexion par email + mot de passe (fini le lien magique, peu fiable).
+- Page Paramètres pour changer son mot de passe.
+- Charte graphique Recycl'ace appliquée (couleurs, police Poppins, logos).
+- Seules les adresses @recyclace.com sont autorisées (+ exception recyclace@gmail.com pour Pierre).
+- Les comptes ne peuvent PAS être créés depuis l'appli (pas d'auto-inscription) : c'est Claude/toi qui les crée via Supabase, sur demande. Volontaire, pour garder le contrôle sur qui a accès.
 
-Aucune variable d'environnement à configurer : la connexion à Supabase est déjà incluse dans le code (clé publique, sans risque).
+## Redéployer
 
-## Première connexion
+1. `npm install`
+2. `npx vercel --prod` (depuis ce dossier)
 
-1. Ouvre l'URL Vercel donnée après le déploiement.
-2. Connecte-toi avec l'email `recyclace@gmail.com` (déjà autorisé) — tu reçois un lien magique par mail, clique dessus.
-3. Au premier chargement, la base est vide : clique sur "Importer les données initiales" (bouton affiché automatiquement) pour charger les 7 650 prospects issus de tes fichiers Excel. À faire une seule fois.
+Aucune variable d'environnement à configurer.
 
-## Ajouter d'autres utilisateurs
+## Comptes actuels
 
-Seuls les emails présents dans la table `allowed_emails` (Supabase) peuvent créer un compte. Pour en ajouter, exécute dans l'éditeur SQL Supabase (projet "Recyclace's Project") :
-```sql
-insert into public.allowed_emails(email) values ('email-collegue@exemple.com');
-```
-Dis-moi les emails à ajouter et je peux aussi le faire directement depuis ce chat.
+- recyclace@gmail.com — mot de passe temporaire fourni par Claude, à changer dans Paramètres après la première connexion.
+- (2e compte à créer — donne l'email @recyclace.com à Claude)
+
+## Ajouter un nouvel utilisateur
+
+Donne l'email (@recyclace.com) à Claude, qui l'ajoute côté Supabase et crée un compte avec un mot de passe temporaire. La personne le change ensuite elle-même dans Paramètres.
+
+## Import des données
+
+Au premier login (une seule fois), si la base est vide, un bouton "Importer les données initiales" apparaît : il charge les 7 650 prospects issus des fichiers Excel B2B / B2B2C.
 
 ## Fonctionnalités
 

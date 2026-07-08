@@ -6,6 +6,7 @@ import Kanban from './Kanban'
 import ListView from './ListView'
 import EditModal from './EditModal'
 import ImportBanner from './ImportBanner'
+import Settings from './Settings'
 import './App.css'
 
 const PAGE_FETCH = 1000
@@ -17,6 +18,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState('kanban')
   const [selected, setSelected] = useState(null)
+  const [showSettings, setShowSettings] = useState(false)
   const [filters, setFilters] = useState({ segment: '', type: '', region: '', search: '', onlyFlagged: false })
 
   useEffect(() => {
@@ -103,7 +105,8 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <h1>CRM Recycl'ace</h1>
+        <img src="/logo-recyclace-blanc.png" alt="Recycl'ace" className="header-logo" />
+        <h1>CRM</h1>
         {loading && <span className="loading-pill">Chargement des données...</span>}
       </header>
       <FiltersBar
@@ -116,12 +119,16 @@ export default function App() {
         filteredCount={filtered.length}
         userEmail={session.user.email}
         onLogout={() => supabase.auth.signOut()}
+        onSettings={() => setShowSettings(true)}
       />
       <main className="app-main">
         {mainContent}
       </main>
       {selected && (
         <EditModal prospect={selected} onClose={() => setSelected(null)} onSaved={handleSaved} />
+      )}
+      {showSettings && (
+        <Settings userEmail={session.user.email} onClose={() => setShowSettings(false)} />
       )}
     </div>
   )
