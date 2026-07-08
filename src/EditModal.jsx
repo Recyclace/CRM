@@ -31,7 +31,10 @@ export default function EditModal({ prospect, onClose, onSaved }) {
       departement: form.departement,
       site_web: form.site_web,
       groupe: form.groupe,
+      fft_engage: form.fft_engage,
       statut: form.statut,
+      lead_chaud: form.lead_chaud,
+      stand_by: form.stand_by,
       action_commentaire,
       derniere_maj: new Date().toISOString().slice(0, 10),
     }
@@ -90,11 +93,27 @@ export default function EditModal({ prospect, onClose, onSaved }) {
           <label>Département
             <input value={form.departement || ''} onChange={(e) => set('departement', e.target.value)} />
           </label>
+          <label>FFT Engagé
+            <select value={form.fft_engage || ''} onChange={(e) => set('fft_engage', e.target.value)}>
+              <option value="">—</option>
+              <option value="Oui">Oui</option>
+              <option value="Non">Non</option>
+            </select>
+          </label>
           <label>Site web
             <input value={form.site_web || ''} onChange={(e) => set('site_web', e.target.value)} />
           </label>
           <label>Groupe / enseigne
             <input value={form.groupe || ''} onChange={(e) => set('groupe', e.target.value)} />
+          </label>
+        </div>
+
+        <div className="modal-checkboxes">
+          <label className="checkbox-inline">
+            <input type="checkbox" checked={!!form.lead_chaud} onChange={(e) => set('lead_chaud', e.target.checked)} /> Lead chaud
+          </label>
+          <label className="checkbox-inline">
+            <input type="checkbox" checked={!!form.stand_by} onChange={(e) => set('stand_by', e.target.checked)} /> Stand by
           </label>
         </div>
 

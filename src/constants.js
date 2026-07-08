@@ -8,15 +8,16 @@ export const STATUSES = [
   "Abandon",
 ]
 
+// Feu tricolore demandé par Pierre : rouge = abandon, jaune = en cours, vert = gagné
 export const STATUS_COLORS = {
-  "À contacter": "#A8B5A1",   // Vert Sauge
-  "Mail envoyé": "#A8D05D",   // Vert Lime
-  "Propale envoyée": "#0D1B3D", // Bleu Marine
-  "Devis envoyé": "#B5603A",  // Terre Battue
-  "Devis signé": "#0F6B5B",   // Vert Émeraude
-  "Facturé": "#1F4A38",       // Vert Forêt
-  "Abandon": "#2F2F2F",       // Gris Anthracite
+  "À contacter": "#9AA0A6",
+  "Mail envoyé": "#E0A800",
+  "Propale envoyée": "#E0A800",
+  "Devis envoyé": "#E0A800",
+  "Devis signé": "#1F4A38",
+  "Facturé": "#1F4A38",
+  "Abandon": "#C0392B",
 }
 
-export const TYPES = ["Ligue / Comité", "Club", "Magasin", "Centre de Padel"]
-export const SEGMENTS = ["B2B", "B2B2C"]
+export const TYPES_B2B = ["Ligue / Comité", "Club de tennis", "Club de padel"]
+export const TYPES_B2B2C = ["Magasin spécialisé", "Grande distribution"]

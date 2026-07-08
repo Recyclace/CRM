@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { supabase } from './supabaseClient'
 import Login from './Login'
-import FiltersBar from './FiltersBar'
-import Kanban from './Kanban'
-import ListView from './ListView'
+import ProspectsTable from './ProspectsTable'
+import Dashboard from './Dashboard'
+import StaleFollowups from './StaleFollowups'
 import EditModal from './EditModal'
 import ImportBanner from './ImportBanner'
 import Settings from './Settings'
+import { TYPES_B2B, TYPES_B2B2C } from './constants'
 import './App.css'
 
 const PAGE_FETCH = 1000
@@ -16,10 +17,10 @@ export default function App() {
   const [checkingSession, setCheckingSession] = useState(true)
   const [prospects, setProspects] = useState([])
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState('kanban')
+  const [tab, setTab] = useState('dashboard')
   const [selected, setSelected] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [filters, setFilters] = useState({ segment: '', type: '', region: '', search: '', onlyFlagged: false })
+  const channelRef = useRef(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -55,40 +56,37 @@ export default function App() {
     if (session) fetchAll()
   }, [session, fetchAll])
 
-  const regions = useMemo(() => {
-    const set = new Set()
-    prospects.forEach((p) => { if (p.region) set.add(p.region) })
-    return Array.from(set).sort()
-  }, [prospects])
+  // Realtime: reflect changes made from other accounts instantly
+  useEffect(() => {
+    if (!session) return
+    const channel = supabase
+      .channel('prospects-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prospects' }, (payload) => {
+        setProspects((prev) => {
+          if (payload.eventType === 'DELETE') {
+            return prev.filter((p) => p.id !== payload.old.id)
+          }
+          const exists = prev.some((p) => p.id === payload.new.id)
+          if (exists) return prev.map((p) => (p.id === payload.new.id ? payload.new : p))
+          return [...prev, payload.new]
+        })
+      })
+      .subscribe()
+    channelRef.current = channel
+    return () => { supabase.removeChannel(channel) }
+  }, [session])
 
-  const filtered = useMemo(() => {
-    const s = filters.search.trim().toLowerCase()
-    return prospects.filter((p) => {
-      if (filters.segment && p.segment !== filters.segment) return false
-      if (filters.type && p.type !== filters.type) return false
-      if (filters.region && p.region !== filters.region) return false
-      if (filters.onlyFlagged && !p.doublon_potentiel && !p.a_verifier) return false
-      if (s) {
-        const hay = [p.nom, p.contact, p.email, p.ville, p.region].filter(Boolean).join(' ').toLowerCase()
-        if (!hay.includes(s)) return false
-      }
-      return true
-    })
-  }, [prospects, filters])
-
-  async function handleStatusChange(prospect, newStatus) {
-    setProspects((prev) => prev.map((p) => (p.id === prospect.id ? { ...p, statut: newStatus } : p)))
-    const { error } = await supabase
-      .from('prospects')
-      .update({ statut: newStatus, derniere_maj: new Date().toISOString().slice(0, 10) })
-      .eq('id', prospect.id)
-    if (error) console.error(error)
+  function handleLocalUpdate(updated) {
+    setProspects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
   }
 
   function handleSaved(updated) {
-    setProspects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+    handleLocalUpdate(updated)
     setSelected(null)
   }
+
+  const b2bProspects = useMemo(() => prospects.filter((p) => p.segment === 'B2B'), [prospects])
+  const b2b2cProspects = useMemo(() => prospects.filter((p) => p.segment === 'B2B2C'), [prospects])
 
   if (checkingSession) return <div className="loading-screen">Chargement...</div>
   if (!session) return <Login />
@@ -96,10 +94,14 @@ export default function App() {
   let mainContent
   if (!loading && prospects.length === 0) {
     mainContent = <ImportBanner onDone={fetchAll} />
-  } else if (view === 'kanban') {
-    mainContent = <Kanban prospects={filtered} onOpen={setSelected} onStatusChange={handleStatusChange} />
-  } else {
-    mainContent = <ListView prospects={filtered} onOpen={setSelected} onStatusChange={handleStatusChange} />
+  } else if (tab === 'dashboard') {
+    mainContent = <Dashboard prospects={prospects} />
+  } else if (tab === 'b2b') {
+    mainContent = <ProspectsTable prospects={b2bProspects} types={TYPES_B2B} segmentLabel="B2B" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} />
+  } else if (tab === 'b2b2c') {
+    mainContent = <ProspectsTable prospects={b2b2cProspects} types={TYPES_B2B2C} segmentLabel="B2B2C" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} />
+  } else if (tab === 'relances') {
+    mainContent = <StaleFollowups prospects={prospects} onOpen={setSelected} onLocalUpdate={handleLocalUpdate} />
   }
 
   return (
@@ -107,20 +109,17 @@ export default function App() {
       <header className="app-header">
         <img src="/logo-recyclace-blanc.png" alt="Recycl'ace" className="header-logo" />
         <h1>CRM</h1>
-        {loading && <span className="loading-pill">Chargement des données...</span>}
+        <nav className="tab-nav">
+          <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}>Dashboard</button>
+          <button className={tab === 'b2b' ? 'active' : ''} onClick={() => setTab('b2b')}>B2B</button>
+          <button className={tab === 'b2b2c' ? 'active' : ''} onClick={() => setTab('b2b2c')}>B2B2C</button>
+          <button className={tab === 'relances' ? 'active' : ''} onClick={() => setTab('relances')}>Relances en retard</button>
+        </nav>
+        {loading && <span className="loading-pill">Chargement...</span>}
+        <div className="user-info header-user">
+          {session.user.email} · <button className="link-btn" onClick={() => setShowSettings(true)}>Paramètres</button> · <button className="link-btn" onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
+        </div>
       </header>
-      <FiltersBar
-        filters={filters}
-        setFilters={setFilters}
-        regions={regions}
-        view={view}
-        setView={setView}
-        total={prospects.length}
-        filteredCount={filtered.length}
-        userEmail={session.user.email}
-        onLogout={() => supabase.auth.signOut()}
-        onSettings={() => setShowSettings(true)}
-      />
       <main className="app-main">
         {mainContent}
       </main>
