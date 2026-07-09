@@ -27,15 +27,17 @@ export default function ActionCell({ prospect, onUpdated }) {
   }
 
   const preview = prospect.action_commentaire || ''
-  const firstLine = preview.split('\n')[0]
+  const lines = preview.split('\n').filter(Boolean)
+  const lastTwo = lines.slice(0, 2).join('\n')
+  const hasMore = lines.length > 2
 
   return (
     <div className="action-cell">
       {preview && (
         <div className="action-history" onClick={() => setExpanded((e) => !e)}>
-          {expanded ? preview : firstLine}
-          {preview.includes('\n') && (
-            <span className="expand-hint">{expanded ? ' (réduire)' : ' (voir tout)'}</span>
+          {expanded ? preview : lastTwo}
+          {hasMore && (
+            <span className="expand-hint">{expanded ? ' (réduire)' : " (voir tout l'historique)"}</span>
           )}
         </div>
       )}

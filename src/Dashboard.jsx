@@ -18,7 +18,7 @@ function computeKpis(prospects) {
   return { total, b2b, b2b2c, signes, leadsChauds, standBy, relances, propalesEffectives, devisEnvoyes, tauxConversion }
 }
 
-export default function Dashboard({ prospects, onOpen, filters, setFilters }) {
+export default function Dashboard({ prospects, onOpen, filters = { region: [], segment: [] }, setFilters }) {
   const [history, setHistory] = useState([])
 
   useEffect(() => {

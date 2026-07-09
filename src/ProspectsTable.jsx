@@ -8,7 +8,7 @@ import MultiSelectDropdown from './MultiSelectDropdown'
 
 const PAGE_SIZE = 100
 
-export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate, filters, setFilters }) {
+export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate, filters = { search: '', type: [], region: [], departement: [], statut: [], assignedTo: [], onlyFlagged: false, sortBy: 'nom' }, setFilters }) {
   const [page, setPage] = useState(0)
   const isB2B = segmentLabel === 'B2B'
   const leadLabel = isB2B ? 'Lead chaud' : 'Lead intéressé'

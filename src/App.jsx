@@ -12,8 +12,9 @@ import WeeklySummary from './WeeklySummary'
 import { TYPES_B2B, TYPES_B2B2C } from './constants'
 import './App.css'
 
-const EMPTY_LIST_FILTERS = { search: '', type: '', region: '', departement: '', statut: '', assignedTo: '', onlyFlagged: false, sortBy: 'nom' }
-const EMPTY_RELANCE_FILTERS = { search: '', segment: '', region: '', departement: '' }
+const EMPTY_LIST_FILTERS = { search: '', type: [], region: [], departement: [], statut: [], assignedTo: [], onlyFlagged: false, sortBy: 'nom' }
+const EMPTY_RELANCE_FILTERS = { search: '', segment: [], region: [], departement: [] }
+const EMPTY_DASHBOARD_FILTERS = { region: [], segment: [] }
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -32,6 +33,7 @@ export default function App() {
   const [b2bFilters, setB2bFilters] = useState({ ...EMPTY_LIST_FILTERS })
   const [b2b2cFilters, setB2b2cFilters] = useState({ ...EMPTY_LIST_FILTERS })
   const [relancesFilters, setRelancesFilters] = useState({ ...EMPTY_RELANCE_FILTERS })
+  const [dashboardFilters, setDashboardFilters] = useState({ ...EMPTY_DASHBOARD_FILTERS })
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -118,7 +120,7 @@ export default function App() {
   if (!loading && prospects.length === 0) {
     mainContent = <ImportBanner onDone={fetchAll} />
   } else if (tab === 'dashboard') {
-    mainContent = <Dashboard prospects={prospects} onOpen={setSelected} />
+    mainContent = <Dashboard prospects={prospects} onOpen={setSelected} filters={dashboardFilters} setFilters={setDashboardFilters} />
   } else if (tab === 'kanban') {
     mainContent = <SimpleKanban prospects={prospects} onOpen={setSelected} />
   } else if (tab === 'b2b') {

@@ -11,7 +11,7 @@ function ageClass(days) {
   return 'age-ocre'
 }
 
-export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filters, setFilters }) {
+export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filters = { search: '', segment: [], region: [], departement: [] }, setFilters }) {
   function set(field, value) {
     setFilters((f) => {
       const next = { ...f, [field]: value }
