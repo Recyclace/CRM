@@ -60,7 +60,7 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filte
     <div className="prospects-table-wrap">
       <div className="filters-bar">
         <div className="filters-row">
-          <input className="search" type="text" placeholder="Rechercher (nom, contact, email, ville...)"
+          <input className="search search-compact" type="text" placeholder="Rechercher..."
             value={filters.search} onChange={(e) => set('search', e.target.value)} />
           <MultiSelectDropdown label="Segment" options={['B2B', 'B2B2C']} selected={filters.segment} onChange={(v) => set('segment', v)} />
           <MultiSelectDropdown label="Région" options={regions} selected={filters.region} onChange={(v) => set('region', v)} />
@@ -82,12 +82,24 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filte
         </div>
       </div>
       <div className="list-view">
-        <table>
+        <table className="fixed-table relances-cols">
+          <colgroup>
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '18%' }} />
+          </colgroup>
           <thead>
             <tr>
               <th>Nom</th>
               <th>Segment</th>
               <th>Type</th>
+              <th>Département</th>
               <th>Jours sans MAJ</th>
               <th>Téléphone</th>
               <th>Mail</th>
@@ -98,18 +110,19 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filte
           <tbody>
             {stale.map((p) => (
               <tr key={p.id} className={ageClass(daysAgo(p.derniere_maj))}>
-                <td className="cell-nom" onClick={() => onOpen(p)}>{p.nom}</td>
+                <td className="cell-nom cell-clamp" onClick={() => onOpen(p)}>{p.nom}</td>
                 <td>{p.segment}</td>
                 <td>{p.type}</td>
+                <td>{p.departement || '—'}</td>
                 <td><strong>{daysAgo(p.derniere_maj)} j</strong></td>
-                <td>{formatMulti(p.telephone)}</td>
-                <td>{formatMulti(p.email)}</td>
+                <td className="cell-wrap">{formatMulti(p.telephone)}</td>
+                <td className="cell-wrap">{formatMulti(p.email)}</td>
                 <td>{p.region || '—'}</td>
                 <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
               </tr>
             ))}
             {stale.length === 0 && (
-              <tr><td colSpan={8} className="empty-row">Rien à relancer pour l'instant.</td></tr>
+              <tr><td colSpan={9} className="empty-row">Rien à relancer pour l'instant.</td></tr>
             )}
           </tbody>
         </table>

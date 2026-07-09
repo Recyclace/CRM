@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { STATUSES, STATUS_COLORS, ASSIGNEES, nameSort, sortByDate, formatMulti } from './constants'
+import { STATUSES, STATUS_COLORS, ASSIGNEES, PROCHAINES_ACTIONS, nameSort, sortByDate, formatMulti } from './constants'
 import ActionCell from './ActionCell'
 import ExportButton from './ExportButton'
 import CopyEmailsButton from './CopyEmailsButton'
 import MultiSelectDropdown from './MultiSelectDropdown'
 
 const PAGE_SIZE = 100
+const DEFAULT_FILTERS = { search: '', type: [], region: [], departement: [], statut: [], assignedTo: [], leadChaud: false, standBy: false, fftEngage: false, important: false, sortBy: 'nom' }
 
-export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate, filters = { search: '', type: [], region: [], departement: [], statut: [], assignedTo: [], onlyFlagged: false, sortBy: 'nom' }, setFilters }) {
+export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate, filters = DEFAULT_FILTERS, setFilters }) {
   const [page, setPage] = useState(0)
   const isB2B = segmentLabel === 'B2B'
   const leadLabel = isB2B ? 'Lead chaud' : 'Lead intéressé'
@@ -41,6 +42,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   const filtered = useMemo(() => {
     const s = filters.search.trim().toLowerCase()
     const sortBy = filters.sortBy || 'nom'
+    const flagsChecked = filters.leadChaud || filters.standBy || filters.fftEngage || filters.important
     return prospects
       .filter((p) => {
         if (filters.type.length && !filters.type.includes(p.type)) return false
@@ -48,7 +50,10 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         if (filters.departement.length && !filters.departement.includes(p.departement)) return false
         if (filters.statut.length && !filters.statut.includes(p.statut)) return false
         if (filters.assignedTo.length && !filters.assignedTo.includes(p.assigned_to)) return false
-        if (filters.onlyFlagged && !p.lead_chaud && !p.stand_by && !p.doublon_potentiel) return false
+        if (flagsChecked) {
+          const matches = (filters.leadChaud && p.lead_chaud) || (filters.standBy && p.stand_by) || (filters.fftEngage && p.fft_engage === 'Oui') || (filters.important && p.important)
+          if (!matches) return false
+        }
         if (s) {
           const hay = [p.nom, p.contact, p.email, p.ville, p.region].filter(Boolean).join(' ').toLowerCase()
           if (!hay.includes(s)) return false
@@ -88,7 +93,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
     <div className="prospects-table-wrap">
       <div className="filters-bar">
         <div className="filters-row">
-          <input className="search" type="text" placeholder="Rechercher (nom, contact, email, ville...)"
+          <input className="search search-compact" type="text" placeholder="Rechercher..."
             value={filters.search} onChange={(e) => set('search', e.target.value)} />
           <MultiSelectDropdown label="Type" options={types} selected={filters.type} onChange={(v) => set('type', v)} />
           <MultiSelectDropdown label="Région" options={regions} selected={filters.region} onChange={(v) => set('region', v)} />
@@ -100,9 +105,25 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             <option value="date_recent">Trier : Date (plus récente)</option>
             <option value="date_ancien">Trier : Date (plus ancienne)</option>
           </select>
+        </div>
+        <div className="filters-row">
           <label className="checkbox-inline">
-            <input type="checkbox" checked={filters.onlyFlagged} onChange={(e) => set('onlyFlagged', e.target.checked)} />
-            {leadLabel} / Stand by
+            <input type="checkbox" checked={filters.leadChaud} onChange={(e) => set('leadChaud', e.target.checked)} />
+            {leadLabel}
+          </label>
+          <label className="checkbox-inline">
+            <input type="checkbox" checked={filters.standBy} onChange={(e) => set('standBy', e.target.checked)} />
+            Stand by
+          </label>
+          {isB2B && (
+            <label className="checkbox-inline">
+              <input type="checkbox" checked={filters.fftEngage} onChange={(e) => set('fftEngage', e.target.checked)} />
+              FFT engagé
+            </label>
+          )}
+          <label className="checkbox-inline">
+            <input type="checkbox" checked={filters.important} onChange={(e) => set('important', e.target.checked)} />
+            Important
           </label>
         </div>
         <div className="filters-row-2">
@@ -112,12 +133,29 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
       </div>
 
       <div className="list-view">
-        <table>
+        <table className="fixed-table prospects-cols">
+          <colgroup>
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '6%' }} />
+            <col style={{ width: '6%' }} />
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '6%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '4%' }} />
+          </colgroup>
           <thead>
             <tr>
               <th>Nom</th>
               <th>Statut</th>
-              <th>Dernière MAJ</th>
+              <th>Action</th>
+              <th>MAJ</th>
               <th>Téléphone</th>
               <th>Mail <CopyEmailsButton rows={filtered} /></th>
               <th>Département</th>
@@ -125,6 +163,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
               <th>Action / Commentaire</th>
               <th>{leadLabel}</th>
               <th>Stand by</th>
+              <th>Important</th>
               {isB2B ? <th>FFT Engagé</th> : <th>Site web</th>}
               <th>Assigné à</th>
             </tr>
@@ -132,7 +171,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
           <tbody>
             {rows.map((p) => (
               <tr key={p.id} className={rowClass(p)}>
-                <td className="cell-nom" onClick={() => onOpen(p)}>{p.nom}</td>
+                <td className="cell-nom cell-clamp" onClick={() => onOpen(p)}>{p.nom}</td>
                 <td>
                   <select
                     className="status-select"
@@ -143,9 +182,15 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                     {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </td>
+                <td>
+                  <select value={p.prochaine_action || ''} onChange={(e) => updateField(p, { prochaine_action: e.target.value || null })}>
+                    <option value="">—</option>
+                    {PROCHAINES_ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </td>
                 <td>{p.derniere_maj || '—'}</td>
-                <td>{formatMulti(p.telephone)}</td>
-                <td>{formatMulti(p.email)}</td>
+                <td className="cell-wrap">{formatMulti(p.telephone)}</td>
+                <td className="cell-wrap">{formatMulti(p.email)}</td>
                 <td>{p.departement || '—'}</td>
                 <td>{p.region || '—'}</td>
                 <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
@@ -155,12 +200,15 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                 <td className="cell-check">
                   <input type="checkbox" checked={!!p.stand_by} onChange={(e) => updateField(p, { stand_by: e.target.checked })} />
                 </td>
+                <td className="cell-check">
+                  <input type="checkbox" checked={!!p.important} onChange={(e) => updateField(p, { important: e.target.checked })} />
+                </td>
                 {isB2B ? (
                   <td className="cell-check">
                     <input type="checkbox" checked={p.fft_engage === 'Oui'} onChange={(e) => updateField(p, { fft_engage: e.target.checked ? 'Oui' : 'Non' })} />
                   </td>
                 ) : (
-                  <td>
+                  <td className="cell-wrap">
                     {p.site_web
                       ? <a href={p.site_web.startsWith('http') ? p.site_web : `https://${p.site_web}`} target="_blank" rel="noreferrer">{p.site_web}</a>
                       : '—'}

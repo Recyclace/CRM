@@ -1,30 +1,40 @@
 # CRM Recycl'ace
 
-## v4 — corrections et ajustements
+## v7 — ergonomie tableaux, nouveaux champs, données enrichies
 
-- **Bug B2B2C corrigé** : le chargement des données s'arrêtait trop tôt dans certains cas (pagination fragile). Il est maintenant basé sur le nombre réel de lignes en base, avec un message d'alerte si un chargement est incomplet.
-- **Colonnes réorganisées** : Nom, Statut, Assigné à, Dernière MAJ, Téléphone, Mail, Département, Région, Action, puis Lead chaud / Stand by / FFT Engagé à la fin, et un bouton "Fiche" pour ouvrir la fiche client complète (contact, ville, site web, groupe, historique...).
-- **Tri alphabétique** : les noms commençant par un chiffre passent à la fin.
-- **100 lignes par page** (au lieu de 40) pour voir plus de résultats d'un coup.
-- **Régions et départements nettoyés** : toutes les variantes d'écriture unifiées (ex. "Haut de France" / "Hauts-de-France" → une seule valeur), départements numériques remplacés par leur nom, région déduite du département quand elle manquait. Départements manquants complétés quand la ville permettait de le déduire (grandes villes reconnues) : 393 → 272 lignes restantes sans département (aucune info exploitable dans le fichier source pour celles-ci).
-- **Lead chaud / Stand by précochés** automatiquement pour les lignes dont l'ancien statut Excel était explicitement "Lead chaud" ou "Stand by".
-- **Nouvelle colonne "Assigné à"** (Pierre / Iouri / Aurélie), filtrable, éditable directement dans le tableau et dans la fiche client.
-- **Onglet Kanban** de retour, simplifié : Propale envoyée / Devis envoyé / Lead chaud / Stand by (une même fiche peut apparaître dans plusieurs colonnes).
-- **Onglet Relances en retard** : critère changé pour "Propale envoyée" (proposition commerciale) de plus de 14 jours sans mise à jour, avec filtres région / département / B2B ou B2B2C / recherche libre.
-- **Dashboard** : les prospects listés dans les pipes (leads chauds, devis envoyés, stand by) sont cliquables et ouvrent directement la fiche client.
+- **Filtres en menu déroulant à cases à cocher** conservés, avec une barre de recherche réduite pour laisser plus de place aux filtres.
+- **Case "Lead chaud/Stand by" éclatée en 3 cases indépendantes** (Lead chaud ou Lead intéressé en B2B2C, Stand by, FFT engagé en B2B) + une nouvelle case **"Important"** avec les mêmes propriétés (filtrable en haut, cochable par ligne, éditable aussi dans la fiche client).
+- **Nouvelle colonne "Action"** : liste déroulante avec 4 choix (Appel, Mail, Propale à faire, A rencontrer), éditable directement dans le tableau et dans la fiche client — distincte de la colonne "Action / Commentaire" qui reste l'historique texte.
+- **Tableaux repensés pour tenir sans scroll horizontal** : largeurs de colonnes fixes, noms de clubs limités à 2 lignes, texte qui passe à la ligne au lieu de déborder.
+- **En-têtes de colonnes fixes (sticky)** : les noms de colonnes restent visibles en scrollant vers le bas.
+- **"Dernière MAJ" renommé "MAJ"** partout (tableaux et export Excel).
+- **Relances en retard** : ajout d'une colonne Département.
+- **Téléphones/mails multiples** affichés sur une ligne séparés par "/".
+- **Données enrichies** : 470 adresses mail détectées dans les commentaires et ajoutées à la colonne mail (sans écraser les mails déjà présents) — 479 lignes ont maintenant plusieurs mails.
+- **Statuts** : "Facturé" fusionné dans "Devis signé" (12 lignes), nouveau statut "Sans retour" (ligne grise) ajouté.
+- **38 clubs "tennis padel"** reclassés de "Club de padel" à "Club de tennis" (hors boutique B2B2C homonyme, laissée en Magasin spécialisé).
+- **Dashboard** : graphique mensuel démarre maintenant en janvier 2026 (au lieu d'une fenêtre glissante de 12 mois), filtres Région + Segment multi-sélection.
+- **Synthèse hebdomadaire** : recentrée sur des totaux globaux (le détail par utilisateur a été retiré), basée sur une fenêtre glissante de 7 jours, historique des synthèses envoyées consultable directement dans la fenêtre. L'envoi automatique chaque vendredi 16h a été mis de côté pour l'instant (aucun connecteur mail ne permet un envoi 100% automatique sans compte tiers à créer) — le bouton d'envoi manuel reste disponible à tout moment.
 
-### Reste à savoir
-- ~272 lignes sans département identifiable (pas de ville exploitable dans les données sources) — à compléter manuellement si besoin.
-- L'enrichissement Tenup (emails/téléphones manquants) est toujours en attente, sur demande.
+### Correctif important
+Un bug d'édition avait tronqué deux fichiers (App.jsx, ActionCell.jsx) causant une page blanche au chargement. Fichiers réécrits intégralement et vérifiés (plus aucune troncature ni caractère invisible) avant chaque livraison désormais.
 
-## Redéployer
+## v6 — filtres à cases à cocher, statuts revus, synthèse hebdo globale
 
-1. `npm install`
-2. `npx vercel --prod` (depuis ce dossier)
+- **Filtres multi-sélection** : Type, Région, Département, Statut, Assigné à (et Segment dans Relances) sont maintenant des menus à cases à cocher — possibilité de cocher plusieurs valeurs en même temps.
+- **Colonne "Fiche" retirée** : un clic sur le nom ouvre toujours la fiche client, donc la colonne redondante en fin de tableau a été supprimée pour gagner de la place.
+- **Statuts revus** : "Facturé" a été retiré et fusionné dans "Devis signé" (12 lignes mises à jour). Nouveau statut "Sans retour" ajouté, affiché avec un fond gris léger dans le tableau.
+- **Lignes Stand by** : fond bleu pastel pour les repérer d'un coup d'œil dans B2B/B2B2C.
+- **Téléphones et mails multiples** : affichés séparés par "/" sur la même ligne (plus lisible que le retour à la ligne testé précédemment).
+- **Action / Commentaire** : affiche maintenant les deux dernières entrées datées par défaut (au lieu d'une seule), avec possibilité de tout déplier.
+- **Synthèse hebdomadaire simplifiée** : uniquement des totaux globaux (propales, mails, devis, actions, évolution vs semaine dernière, objectif 5 propales/jour) — le détail par utilisateur a été retiré à la demande de Pierre.
 
-## Comptes
+## v5 — filtres persistants, Dashboard KPIs, relances colorées, synthèse hebdo
 
-- recyclace@gmail.com
-- iouri.dadhemar@recyclace.com
-
-Mot de passe changeable dans Paramètres. Pour ajouter quelqu'un (@recyclace.com), donne l'email à Claude.
+- **Filtres persistants et indépendants** : les filtres B2B, B2B2C et Relances restent en mémoire tout au long de la session (ils ne se réinitialisent plus en changeant d'onglet), et modifier les filtres d'un onglet n'affecte pas les autres.
+- **Tri par date** ajouté dans les listes déroulantes (Nom A-Z / Date la plus récente / Date la plus ancienne), en plus du filtre statut existant.
+- **Colonne "Assigné à" déplacée en toute fin de tableau.**
+- **Téléphones normalisés** au format "0X XX XX XX XX" partout, et téléphones/mails multiples affichés un par ligne dans le tableau.
+- **Bouton "Copier les mails"** à côté de l'en-tête "Mail" (B2B, B2B2C et Relances) : copie tous les emails des lignes actuellement filtrées.
+- **FFT Engagé devient une case à cocher** (B2B uniquement). **B2B2C** : la colonne FFT est remplacée par un lien cliquable vers le site web du magasin, et "Lead chaud" est renommé "Lead intéressé" dans ce contexte.
+- **"À vérifier" supprimé** : ce champ ne servait plus à rien une fois le nettoyage des données terminé (l'historique du statut d'origine reste visible dans 

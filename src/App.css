@@ -27,6 +27,7 @@
   font-family: inherit;
 }
 .filters-row input.search { flex: 1; min-width: 220px; }
+.filters-row input.search.search-compact { flex: 0 1 180px; min-width: 140px; }
 .checkbox-inline { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
 .filters-row-2 { display: flex; align-items: center; gap: 16px; }
 .view-toggle button {
@@ -74,12 +75,21 @@
 .tag.warn { background: var(--parme); color: #4a2f66; }
 
 /* List view */
-.list-view table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
-.list-view th, .list-view td { padding: 8px 10px; border-bottom: 1px solid #f0ece3; font-size: 13px; text-align: left; }
-.list-view th { background: #F7F3EC; font-weight: 600; color: var(--ink); }
+.list-view table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; }
+.list-view table.fixed-table { table-layout: fixed; }
+.list-view th, .list-view td {
+  padding: 6px 8px; border-bottom: 1px solid #f0ece3; font-size: 12px; text-align: left;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.list-view th { background: #F7F3EC; font-weight: 600; color: var(--ink); position: sticky; top: 0; z-index: 5; white-space: normal; }
 .list-view tr.flagged { background: #FBF4E8; }
 .cell-nom { cursor: pointer; font-weight: 600; color: var(--forest); }
-.list-view select { padding: 4px 6px; border-radius: 4px; border: 1.5px solid #ccc; font-size: 12px; font-family: inherit; }
+.cell-clamp {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; white-space: normal; word-break: break-word; line-height: 1.25;
+}
+.cell-wrap { white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
+.list-view select { padding: 4px 6px; border-radius: 4px; border: 1.5px solid #ccc; font-size: 11.5px; font-family: inherit; max-width: 100%; }
 .pagination { display: flex; align-items: center; gap: 12px; justify-content: center; padding: 14px; font-size: 13px; }
 .pagination button { padding: 6px 12px; border: 1px solid #ddd3c2; background: #fff; border-radius: 6px; cursor: pointer; font-family: inherit; }
 .pagination button:disabled { opacity: 0.4; cursor: default; }
@@ -161,15 +171,15 @@
 .cell-check { text-align: center; }
 
 /* Action cell */
-.action-cell { display: flex; flex-direction: column; gap: 4px; min-width: 280px; max-width: 420px; }
+.action-cell { display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; }
 .action-history {
-  font-size: 11.5px; color: #6b6459; max-height: 5.6em; overflow: hidden; cursor: pointer;
-  white-space: pre-wrap; line-height: 1.35;
+  font-size: 11px; color: #6b6459; max-height: 5.4em; overflow: hidden; cursor: pointer;
+  white-space: pre-wrap; word-break: break-word; line-height: 1.35;
 }
 .expand-hint { color: var(--emeraude); font-style: italic; }
 .action-input-row { display: flex; gap: 4px; }
 .action-input-row input {
-  flex: 1; padding: 5px 7px; border: 1px solid #ddd3c2; border-radius: 5px; font-size: 12px; font-family: inherit;
+  flex: 1; padding: 5px 7px; border: 1px solid #ddd3c2; border-radius: 5px; font-size: 12px; font-family: inherit; min-width: 0;
 }
 .action-input-row button {
   padding: 5px 10px; border: none; border-radius: 5px; background: var(--forest); color: #fff;
@@ -255,3 +265,35 @@
 .weekly-goal-bar { background: #EFE9DD; border-radius: 6px; height: 8px; overflow: hidden; width: 100px; }
 .weekly-goal-fill { background: var(--forest); height: 100%; }
 .weekly-goal-cell { display: flex; align-items: center; gap: 8px; }
+
+/* Lignes Stand by (bleu pastel) et Sans retour (gris léger) */
+.list-view tr.row-standby { background: #DCE7F5; }
+.list-view tr.row-sansretour { background: #F0F0EE; }
+.list-view tr.row-standby.flagged, .list-view tr.row-sansretour.flagged { background: #E3D9EE; }
+
+/* Menu déroulant multi-sélection (filtres à cases à cocher) */
+.multiselect { position: relative; display: inline-block; }
+.multiselect-btn {
+  padding: 7px 10px; border: 1px solid #ddd3c2; border-radius: 6px; font-size: 13px; background: #fff;
+  font-family: inherit; cursor: pointer; color: var(--ink);
+}
+.multiselect-btn.active { border-color: var(--forest); color: var(--forest); font-weight: 600; }
+.multiselect-panel {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; background: #fff;
+  border: 1px solid #ddd3c2; border-radius: 8px; box-shadow: 0 4px 14px rgba(19,48,42,0.15);
+  padding: 8px; min-width: 200px; max-height: 280px; display: flex; flex-direction: column;
+}
+.multiselect-actions { display: flex; gap: 6px; margin-bottom: 6px; border-bottom: 1px solid #f0ece3; padding-bottom: 6px; }
+.multiselect-actions button {
+  font-size: 11px; padding: 3px 8px; border: 1px solid #ddd3c2; border-radius: 10px; background: #F7F3EC;
+  cursor: pointer; font-family: inherit;
+}
+.multiselect-list { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.multiselect-item { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
+.multiselect-item:hover { background: #F7F3EC; }
+.multiselect-empty { font-size: 12px; color: #948c7f; font-style: italic; padding: 4px; }
+
+/* Historique des synthèses hebdomadaires */
+.weekly-history-list { list-style: none; margin: 10px 0 0; padding: 0; max-height: 180px; overflow-y: auto; border-top: 1px solid #f0ece3; }
+.weekly-history-list li { padding: 6px 0; border-bottom: 1px solid #f0ece3; font-size: 12.5px; color: #6b6459; }
+.weekly-history-toggle { font-size: 12px; color: var(--emeraude); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: inherit; padding: 0; margin-top: 10px; }

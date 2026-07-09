@@ -66,10 +66,12 @@ export default function Dashboard({ prospects, onOpen, filters = { region: [], s
   const monthlyData = useMemo(() => {
     const buckets = {}
     const now = new Date()
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const chartStart = new Date(2026, 0, 1) // demande Pierre : le graphique démarre en janvier 2026
+    let cursor = new Date(chartStart)
+    while (cursor <= now) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
       buckets[key] = { month: key, 'Mails envoyés': 0, 'Propales envoyées': 0, 'Devis envoyés': 0 }
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
     }
     const hasFilter = filters.region.length > 0 || filters.segment.length > 0
     history.forEach((h) => {

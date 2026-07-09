@@ -6,9 +6,11 @@ export default function ExportButton({ rows, filename }) {
       Nom: p.nom,
       Type: p.type,
       Statut: p.statut,
+      Action: p.prochaine_action || '',
       'Lead chaud': p.lead_chaud ? 'Oui' : 'Non',
       'Stand by': p.stand_by ? 'Oui' : 'Non',
-      'Dernière MAJ': p.derniere_maj || '',
+      'Important': p.important ? 'Oui' : 'Non',
+      'MAJ': p.derniere_maj || '',
       Téléphone: p.telephone || '',
       Email: p.email || '',
       'FFT Engagé': p.fft_engage || '',
@@ -18,7 +20,7 @@ export default function ExportButton({ rows, filename }) {
       Contact: p.contact || '',
       'Site web': p.site_web || '',
       Groupe: p.groupe || '',
-      Action: p.action_commentaire || '',
+      'Commentaire': p.action_commentaire || '',
     }))
     const ws = XLSX.utils.json_to_sheet(data)
     const wb = XLSX.utils.book_new()

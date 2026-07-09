@@ -3,14 +3,6 @@ import { supabase } from './supabaseClient'
 
 const WEEKLY_GOAL = 25 // 5 propales/jour x 5 jours ouvrés, objectif global équipe
 
-function startOfWeek(date) {
-  const d = new Date(date)
-  const day = (d.getDay() + 6) % 7 // lundi = 0
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - day)
-  return d
-}
-
 function fmt(d) {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
 }
@@ -18,20 +10,24 @@ function fmt(d) {
 export default function WeeklySummary({ onClose }) {
   const [rows, setRows] = useState(null)
   const [recipients, setRecipients] = useState([])
+  const [history, setHistory] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sent, setSent] = useState(false)
 
-  const thisWeekStart = useMemo(() => startOfWeek(new Date()), [])
-  const lastWeekStart = useMemo(() => {
-    const d = new Date(thisWeekStart)
+  // Fenêtre glissante de 7 jours (et non semaine calendaire) pour coller à l'envoi
+  // automatique du vendredi 16h basé sur "les 7 derniers jours".
+  const periodEnd = useMemo(() => new Date(), [])
+  const periodStart = useMemo(() => {
+    const d = new Date(periodEnd)
     d.setDate(d.getDate() - 7)
     return d
-  }, [thisWeekStart])
-  const twoWeeksAgoStart = useMemo(() => {
-    const d = new Date(thisWeekStart)
+  }, [periodEnd])
+  const prevPeriodStart = useMemo(() => {
+    const d = new Date(periodEnd)
     d.setDate(d.getDate() - 14)
     return d
-  }, [thisWeekStart])
+  }, [periodEnd])
 
   useEffect(() => {
     async function load() {
@@ -39,31 +35,37 @@ export default function WeeklySummary({ onClose }) {
       const { data: hist } = await supabase
         .from('status_history')
         .select('statut, changed_at')
-        .gte('changed_at', twoWeeksAgoStart.toISOString())
+        .gte('changed_at', prevPeriodStart.toISOString())
       const { data: recips } = await supabase.from('report_recipients').select('email')
+      const { data: pastSummaries } = await supabase
+        .from('weekly_summaries')
+        .select('*')
+        .order('week_start', { ascending: false })
+        .limit(12)
       setRecipients(recips || [])
       setRows(hist || [])
+      setHistory(pastSummaries || [])
       setLoading(false)
     }
     load()
-  }, [twoWeeksAgoStart])
+  }, [prevPeriodStart])
 
   const totals = useMemo(() => {
     const t = { propales: 0, mails: 0, devis: 0, actions: 0, propalesPrev: 0, mailsPrev: 0, devisPrev: 0, actionsPrev: 0 }
     if (!rows) return t
     rows.forEach((h) => {
       const changed = new Date(h.changed_at)
-      const inThisWeek = changed >= thisWeekStart
-      const inLastWeek = changed >= lastWeekStart && changed < thisWeekStart
-      if (!inThisWeek && !inLastWeek) return
-      const suffix = inThisWeek ? '' : 'Prev'
+      const inCurrent = changed >= periodStart && changed <= periodEnd
+      const inPrev = changed >= prevPeriodStart && changed < periodStart
+      if (!inCurrent && !inPrev) return
+      const suffix = inCurrent ? '' : 'Prev'
       t['actions' + suffix]++
       if (h.statut === 'Propale envoyée') t['propales' + suffix]++
       else if (h.statut === 'Mail envoyé') t['mails' + suffix]++
       else if (h.statut === 'Devis envoyé') t['devis' + suffix]++
     })
     return t
-  }, [rows, thisWeekStart, lastWeekStart])
+  }, [rows, periodStart, periodEnd, prevPeriodStart])
 
   function evo(current, prev) {
     if (prev === 0) return current === 0 ? '—' : '+100%'
@@ -73,9 +75,9 @@ export default function WeeklySummary({ onClose }) {
 
   function buildEmailBody() {
     const lines = []
-    lines.push(`Synthèse hebdomadaire Recycl'ace — semaine du ${fmt(thisWeekStart)}`)
+    lines.push(`Synthèse Recycl'ace — ${fmt(periodStart)} au ${fmt(periodEnd)}`)
     lines.push('')
-    lines.push(`Propales envoyées : ${totals.propales} (évolution vs semaine dernière : ${evo(totals.propales, totals.propalesPrev)})`)
+    lines.push(`Propales envoyées : ${totals.propales} (évolution vs 7 jours précédents : ${evo(totals.propales, totals.propalesPrev)})`)
     lines.push(`Mails envoyés : ${totals.mails} (${evo(totals.mails, totals.mailsPrev)})`)
     lines.push(`Devis envoyés : ${totals.devis} (${evo(totals.devis, totals.devisPrev)})`)
     lines.push(`Actions commerciales totales : ${totals.actions} (${evo(totals.actions, totals.actionsPrev)})`)
@@ -84,12 +86,25 @@ export default function WeeklySummary({ onClose }) {
     return lines.join('\n')
   }
 
-  function handleSend() {
-    const to = ['recyclace@gmail.com', ...recipients.map((r) => r.email)].join(',')
-    const subject = encodeURIComponent(`Synthèse hebdomadaire Recycl'ace — semaine du ${fmt(thisWeekStart)}`)
+  async function handleSend() {
+    const recipientEmails = ['recyclace@gmail.com', ...recipients.map((r) => r.email)]
+    const to = recipientEmails.join(',')
+    const subject = encodeURIComponent(`Synthèse Recycl'ace — ${fmt(periodStart)} au ${fmt(periodEnd)}`)
     const body = encodeURIComponent(buildEmailBody())
     window.location.href = `mailto:${to}?subject=${subject}&body=${body}`
     setSent(true)
+    await supabase.from('weekly_summaries').insert({
+      week_start: periodStart.toISOString().slice(0, 10),
+      propales: totals.propales,
+      mails: totals.mails,
+      devis: totals.devis,
+      actions: totals.actions,
+      propales_prev: totals.propalesPrev,
+      mails_prev: totals.mailsPrev,
+      devis_prev: totals.devisPrev,
+      actions_prev: totals.actionsPrev,
+      sent_to: recipientEmails.join(', '),
+    })
   }
 
   const goalPct = Math.min(100, Math.round((totals.propales / WEEKLY_GOAL) * 100))
@@ -101,7 +116,7 @@ export default function WeeklySummary({ onClose }) {
           <h2>Synthèse hebdomadaire</h2>
           <button className="icon-btn" onClick={onClose}>✕</button>
         </div>
-        <p className="hint">Semaine du {fmt(thisWeekStart)} — comparée à la semaine du {fmt(lastWeekStart)}. Objectif équipe : 5 propales/jour (soit {WEEKLY_GOAL}/semaine).</p>
+        <p className="hint">Du {fmt(periodStart)} au {fmt(periodEnd)} (7 derniers jours) — comparée aux 7 jours précédents. Objectif équipe : 5 propales/jour (soit {WEEKLY_GOAL}/semaine). Envoi automatique chaque vendredi à 16h.</p>
 
         {loading && <p>Chargement...</p>}
 
@@ -121,7 +136,22 @@ export default function WeeklySummary({ onClose }) {
               <span>{totals.propales}/{WEEKLY_GOAL} propales ({goalPct}% de l'objectif hebdo)</span>
             </div>
 
-            <p className="hint" style={{ marginTop: 16 }}>Basé sur tous les changements de statut enregistrés sur les 14 derniers jours (mail envoyé, propale envoyée, devis envoyé), tous utilisateurs confondus.</p>
+            <p className="hint" style={{ marginTop: 16 }}>Basé sur tous les changements de statut enregistrés (mail envoyé, propale envoyée, devis envoyé), tous utilisateurs confondus.</p>
+
+            <button className="weekly-history-toggle" onClick={() => setShowHistory((s) => !s)}>
+              {showHistory ? 'Masquer' : 'Voir'} l'historique des synthèses ({history.length})
+            </button>
+            {showHistory && (
+              <ul className="weekly-history-list">
+                {history.map((h) => (
+                  <li key={h.id}>
+                    Semaine du {new Date(h.week_start).toLocaleDateString('fr-FR')} — {h.propales} propale(s), {h.mails} mail(s), {h.devis} devis, {h.actions} action(s) au total
+                    {h.sent_to ? ` · envoyée à ${h.sent_to}` : ''}
+                  </li>
+                ))}
+                {history.length === 0 && <li>Aucune synthèse enregistrée pour l'instant.</li>}
+              </ul>
+            )}
           </>
         )}
 

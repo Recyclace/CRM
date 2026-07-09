@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
-import { STATUSES, ASSIGNEES } from './constants'
+import { STATUSES, ASSIGNEES, PROCHAINES_ACTIONS } from './constants'
 
 export default function EditModal({ prospect, onClose, onSaved }) {
   const [form, setForm] = useState({ ...prospect })
@@ -33,8 +33,10 @@ export default function EditModal({ prospect, onClose, onSaved }) {
       groupe: form.groupe,
       fft_engage: form.fft_engage,
       statut: form.statut,
+      prochaine_action: form.prochaine_action || null,
       lead_chaud: form.lead_chaud,
       stand_by: form.stand_by,
+      important: form.important,
       assigned_to: form.assigned_to || null,
       action_commentaire,
       derniere_maj: new Date().toISOString().slice(0, 10),
@@ -85,6 +87,12 @@ export default function EditModal({ prospect, onClose, onSaved }) {
               {ASSIGNEES.map((a) => <option key={a} value={a}>{a}</option>)}
             </select>
           </label>
+          <label>Action
+            <select value={form.prochaine_action || ''} onChange={(e) => set('prochaine_action', e.target.value)}>
+              <option value="">—</option>
+              {PROCHAINES_ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </label>
           <label>Email
             <input value={form.email || ''} onChange={(e) => set('email', e.target.value)} />
           </label>
@@ -121,6 +129,9 @@ export default function EditModal({ prospect, onClose, onSaved }) {
           </label>
           <label className="checkbox-inline">
             <input type="checkbox" checked={!!form.stand_by} onChange={(e) => set('stand_by', e.target.checked)} /> Stand by
+          </label>
+          <label className="checkbox-inline">
+            <input type="checkbox" checked={!!form.important} onChange={(e) => set('important', e.target.checked)} /> Important
           </label>
         </div>
 
