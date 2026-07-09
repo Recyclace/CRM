@@ -8,8 +8,12 @@ import StaleFollowups from './StaleFollowups'
 import EditModal from './EditModal'
 import ImportBanner from './ImportBanner'
 import Settings from './Settings'
+import WeeklySummary from './WeeklySummary'
 import { TYPES_B2B, TYPES_B2B2C } from './constants'
 import './App.css'
+
+const EMPTY_LIST_FILTERS = { search: '', type: '', region: '', departement: '', statut: '', assignedTo: '', onlyFlagged: false, sortBy: 'nom' }
+const EMPTY_RELANCE_FILTERS = { search: '', segment: '', region: '', departement: '' }
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -20,7 +24,14 @@ export default function App() {
   const [tab, setTab] = useState('dashboard')
   const [selected, setSelected] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showWeekly, setShowWeekly] = useState(false)
   const channelRef = useRef(null)
+
+  // Filtres persistants par onglet : conservés en mémoire tant que la session dure,
+  // indépendants entre B2B, B2B2C et Relances.
+  const [b2bFilters, setB2bFilters] = useState({ ...EMPTY_LIST_FILTERS })
+  const [b2b2cFilters, setB2b2cFilters] = useState({ ...EMPTY_LIST_FILTERS })
+  const [relancesFilters, setRelancesFilters] = useState({ ...EMPTY_RELANCE_FILTERS })
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -111,11 +122,11 @@ export default function App() {
   } else if (tab === 'kanban') {
     mainContent = <SimpleKanban prospects={prospects} onOpen={setSelected} />
   } else if (tab === 'b2b') {
-    mainContent = <ProspectsTable prospects={b2bProspects} types={TYPES_B2B} segmentLabel="B2B" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} />
+    mainContent = <ProspectsTable prospects={b2bProspects} types={TYPES_B2B} segmentLabel="B2B" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} filters={b2bFilters} setFilters={setB2bFilters} />
   } else if (tab === 'b2b2c') {
-    mainContent = <ProspectsTable prospects={b2b2cProspects} types={TYPES_B2B2C} segmentLabel="B2B2C" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} />
+    mainContent = <ProspectsTable prospects={b2b2cProspects} types={TYPES_B2B2C} segmentLabel="B2B2C" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} filters={b2b2cFilters} setFilters={setB2b2cFilters} />
   } else if (tab === 'relances') {
-    mainContent = <StaleFollowups prospects={prospects} onOpen={setSelected} onLocalUpdate={handleLocalUpdate} />
+    mainContent = <StaleFollowups prospects={prospects} onOpen={setSelected} onLocalUpdate={handleLocalUpdate} filters={relancesFilters} setFilters={setRelancesFilters} />
   }
 
   return (
@@ -128,10 +139,11 @@ export default function App() {
           <button className={tab === 'kanban' ? 'active' : ''} onClick={() => setTab('kanban')}>Kanban</button>
           <button className={tab === 'b2b' ? 'active' : ''} onClick={() => setTab('b2b')}>B2B</button>
           <button className={tab === 'b2b2c' ? 'active' : ''} onClick={() => setTab('b2b2c')}>B2B2C</button>
-          <button className={tab === 'relances' ? 'active' : ''} onClick={() => setTab('relances')}>Relances en retard</button>
+          <button className={tab === 'relances' ? 'active tab-ocre' : 'tab-ocre'} onClick={() => setTab('relances')}>Relances en retard</button>
         </nav>
         {loading && <span className="loading-pill">Chargement...</span>}
         {fetchWarning && <span className="loading-pill warn-pill">{fetchWarning}</span>}
+        <button className="weekly-btn" onClick={() => setShowWeekly(true)}>📊 Synthèse hebdomadaire</button>
         <div className="user-info header-user">
           {session.user.email} · <button className="link-btn" onClick={() => setShowSettings(true)}>Paramètres</button> · <button className="link-btn" onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
         </div>
@@ -144,6 +156,9 @@ export default function App() {
       )}
       {showSettings && (
         <Settings userEmail={session.user.email} onClose={() => setShowSettings(false)} />
+      )}
+      {showWeekly && (
+        <WeeklySummary onClose={() => setShowWeekly(false)} />
       )}
     </div>
   )

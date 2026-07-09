@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 
 export default function Settings({ userEmail, onClose }) {
@@ -7,6 +7,39 @@ export default function Settings({ userEmail, onClose }) {
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const [recipients, setRecipients] = useState([])
+  const [newRecipient, setNewRecipient] = useState('')
+  const [recErr, setRecErr] = useState('')
+
+  useEffect(() => { loadRecipients() }, [])
+
+  async function loadRecipients() {
+    const { data, error } = await supabase.from('report_recipients').select('*').order('added_at', { ascending: true })
+    if (!error) setRecipients(data || [])
+  }
+
+  async function addRecipient(e) {
+    e.preventDefault()
+    setRecErr('')
+    const email = newRecipient.trim().toLowerCase()
+    if (!email || !email.includes('@')) {
+      setRecErr('Adresse email invalide.')
+      return
+    }
+    const { error } = await supabase.from('report_recipients').insert({ email })
+    if (error) {
+      setRecErr(error.code === '23505' ? 'Cette adresse est déjà destinataire.' : "Erreur : " + error.message)
+      return
+    }
+    setNewRecipient('')
+    loadRecipients()
+  }
+
+  async function removeRecipient(email) {
+    await supabase.from('report_recipients').delete().eq('email', email)
+    loadRecipients()
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -56,6 +89,24 @@ export default function Settings({ userEmail, onClose }) {
             </button>
           </div>
         </form>
+
+        <hr className="settings-sep" />
+        <h3 className="settings-subtitle">Destinataires de la synthèse hebdomadaire</h3>
+        <p className="hint">recyclace@gmail.com reçoit toujours la synthèse. Ajoute ici d'autres adresses si besoin.</p>
+        <ul className="recipients-list">
+          {recipients.map((r) => (
+            <li key={r.email}>
+              <span>{r.email}</span>
+              <button className="link-btn" onClick={() => removeRecipient(r.email)}>Retirer</button>
+            </li>
+          ))}
+          {recipients.length === 0 && <li className="empty">Aucun destinataire additionnel pour l'instant.</li>}
+        </ul>
+        <form onSubmit={addRecipient} className="add-recipient-form">
+          <input type="email" placeholder="nouvelle-adresse@exemple.com" value={newRecipient} onChange={(e) => setNewRecipient(e.target.value)} />
+          <button type="submit" className="btn-secondary">Ajouter</button>
+        </form>
+        {recErr && <p className="error">{recErr}</p>}
       </div>
     </div>
   )

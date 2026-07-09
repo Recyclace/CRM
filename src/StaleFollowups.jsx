@@ -1,20 +1,21 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import ActionCell from './ActionCell'
 import ExportButton from './ExportButton'
+import CopyEmailsButton from './CopyEmailsButton'
+import MultiSelectDropdown from './MultiSelectDropdown'
+import { daysAgo, formatMulti } from './constants'
 
-function daysAgo(dateStr) {
-  if (!dateStr) return Infinity
-  const d = new Date(dateStr)
-  return Math.floor((Date.now() - d.getTime()) / (1000 * 3600 * 24))
+function ageClass(days) {
+  if (days > 30) return 'age-red'
+  if (days > 20) return 'age-orange'
+  return 'age-ocre'
 }
 
-export default function StaleFollowups({ prospects, onOpen, onLocalUpdate }) {
-  const [filters, setFilters] = useState({ search: '', segment: '', region: '', departement: '' })
-
+export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filters, setFilters }) {
   function set(field, value) {
     setFilters((f) => {
       const next = { ...f, [field]: value }
-      if (field === 'region') next.departement = ''
+      if (field === 'region') next.departement = []
       return next
     })
   }
@@ -33,7 +34,7 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate }) {
     const set = new Set()
     staleAll.forEach((p) => {
       if (!p.departement) return
-      if (filters.region && p.region !== filters.region) return
+      if (filters.region.length && !filters.region.includes(p.region)) return
       set.add(p.departement)
     })
     return Array.from(set).sort()
@@ -43,9 +44,9 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate }) {
     const s = filters.search.trim().toLowerCase()
     return staleAll
       .filter((p) => {
-        if (filters.segment && p.segment !== filters.segment) return false
-        if (filters.region && p.region !== filters.region) return false
-        if (filters.departement && p.departement !== filters.departement) return false
+        if (filters.segment.length && !filters.segment.includes(p.segment)) return false
+        if (filters.region.length && !filters.region.includes(p.region)) return false
+        if (filters.departement.length && !filters.departement.includes(p.departement)) return false
         if (s) {
           const hay = [p.nom, p.contact, p.email, p.ville, p.region].filter(Boolean).join(' ').toLowerCase()
           if (!hay.includes(s)) return false
@@ -61,25 +62,23 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate }) {
         <div className="filters-row">
           <input className="search" type="text" placeholder="Rechercher (nom, contact, email, ville...)"
             value={filters.search} onChange={(e) => set('search', e.target.value)} />
-          <select value={filters.segment} onChange={(e) => set('segment', e.target.value)}>
-            <option value="">B2B et B2B2C</option>
-            <option value="B2B">B2B</option>
-            <option value="B2B2C">B2B2C</option>
-          </select>
-          <select value={filters.region} onChange={(e) => set('region', e.target.value)}>
-            <option value="">Toutes régions</option>
-            {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
-          <select value={filters.departement} onChange={(e) => set('departement', e.target.value)}>
-            <option value="">Tous départements</option>
-            {departements.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <MultiSelectDropdown label="Segment" options={['B2B', 'B2B2C']} selected={filters.segment} onChange={(v) => set('segment', v)} />
+          <MultiSelectDropdown label="Région" options={regions} selected={filters.region} onChange={(v) => set('region', v)} />
+          <MultiSelectDropdown label="Département" options={departements} selected={filters.departement} onChange={(v) => set('departement', v)} />
         </div>
         <div className="filters-row-2">
           <div className="count-info">
-            {stale.length} propale(s) envoyée(s) depuis plus de 14 jours sans mise à jour
+            {stale.length} proposition(s) commerciale(s) envoyée(s) depuis plus de 14 jours sans mise à jour
           </div>
-          <ExportButton rows={stale} filename="relances-en-retard.xlsx" />
+          <div className="filters-row-2-actions">
+            <CopyEmailsButton rows={stale} />
+            <ExportButton rows={stale} filename="relances-en-retard.xlsx" />
+          </div>
+        </div>
+        <div className="legend-row">
+          <span className="legend-dot age-ocre"></span> 14 à 20 jours
+          <span className="legend-dot age-orange"></span> 20 à 30 jours
+          <span className="legend-dot age-red"></span> plus de 30 jours
         </div>
       </div>
       <div className="list-view">
@@ -98,13 +97,13 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate }) {
           </thead>
           <tbody>
             {stale.map((p) => (
-              <tr key={p.id} className="flagged">
+              <tr key={p.id} className={ageClass(daysAgo(p.derniere_maj))}>
                 <td className="cell-nom" onClick={() => onOpen(p)}>{p.nom}</td>
                 <td>{p.segment}</td>
                 <td>{p.type}</td>
                 <td><strong>{daysAgo(p.derniere_maj)} j</strong></td>
-                <td>{p.telephone || '—'}</td>
-                <td>{p.email || '—'}</td>
+                <td>{formatMulti(p.telephone)}</td>
+                <td>{formatMulti(p.email)}</td>
                 <td>{p.region || '—'}</td>
                 <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
               </tr>
