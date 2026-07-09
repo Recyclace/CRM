@@ -1,5 +1,63 @@
 # CRM Recycl'ace
 
+Application CRM (React + Vite) avec stockage **Supabase**, prête à déployer sur **Vercel**.
+
+## Développement local
+
+```bash
+npm install
+npm run dev
+```
+
+Les identifiants Supabase sont lus depuis un fichier `.env` (déjà présent en local, non versionné). Pour repartir de zéro, copie `.env.example` en `.env` et renseigne `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (Supabase → Project Settings → API).
+
+## Mise sur GitHub
+
+> ⚠️ `node_modules` (6 700+ fichiers) et `.env` ne doivent jamais être versionnés — c'est déjà géré par `.gitignore`. S'ils sont apparus sur GitHub, c'est qu'aucun dépôt git ne filtrait l'upload.
+
+Le plus simple avec **GitHub Desktop** (respecte automatiquement `.gitignore`) :
+
+1. **File → Add local repository** → sélectionne le dossier `crm-app`.
+2. **Create a repository**, puis **Publish repository**.
+
+En ligne de commande :
+
+```bash
+cd crm-app
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/<ton-compte>/crm-recyclace.git
+git push -u origin main
+```
+
+## Déploiement sur Vercel
+
+1. [vercel.com](https://vercel.com) → **Add New… → Project** → importe le dépôt GitHub.
+2. Vercel détecte **Vite** automatiquement (build `npm run build`, sortie `dist`).
+3. Dans **Environment Variables**, ajoute `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (mêmes valeurs que ton `.env`).
+4. **Deploy**. Chaque `git push` sur `main` redéploie automatiquement.
+
+## Supabase — à vérifier
+
+- La clé `anon` est publique par nature ; la sécurité repose sur les **Row Level Security (RLS)**. Vérifie que RLS est **activé** sur la table `prospects`.
+- Dans **Authentication → URL Configuration**, ajoute l'URL Vercel aux **Redirect URLs** pour que la connexion par e-mail fonctionne en production.
+
+## Supprimer un dossier `.git` cassé (si besoin)
+
+Un `.git` partiel a pu être créé et ne peut pas être nettoyé automatiquement. Sous Windows, PowerShell :
+
+```powershell
+Remove-Item -Recurse -Force "C:\Users\iouri\OneDrive\Desktop\00_Claude CRM\crm-app\.git"
+```
+
+Puis reprends la section « Mise sur GitHub ».
+
+---
+
+# Journal des versions
+
 ## v7 — ergonomie tableaux, nouveaux champs, données enrichies
 
 - **Filtres en menu déroulant à cases à cocher** conservés, avec une barre de recherche réduite pour laisser plus de place aux filtres.
