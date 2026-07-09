@@ -36,7 +36,14 @@
 .view-toggle button:first-child { border-radius: 6px 0 0 6px; }
 .view-toggle button:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
 .view-toggle button.active { background: var(--forest); color: #fff; border-color: var(--forest); }
-.count-info { font-size: 13px; color: #7a7267; }
+.count-info { font-size: 13px; color: #7a7267; display: flex; align-items: center; gap: 10px; }
+.count-info strong { color: var(--ink); font-size: 14px; }
+.clear-filters-btn {
+  font-size: 12px; padding: 3px 10px; border: 1px solid #e3c9bd; border-radius: 12px;
+  background: #F7ECE6; color: var(--terre); cursor: pointer; font-family: inherit; white-space: nowrap;
+  transition: background 0.12s ease;
+}
+.clear-filters-btn:hover { background: #F0DDD2; }
 .user-info { margin-left: auto; font-size: 13px; color: #7a7267; }
 
 .link-btn { background: none; border: none; color: var(--emeraude); cursor: pointer; padding: 0; font-size: inherit; text-decoration: underline; font-family: inherit; }
@@ -78,15 +85,22 @@
 .list-view table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; }
 .list-view table.fixed-table { table-layout: fixed; }
 .list-view th, .list-view td {
-  padding: 6px 8px; border-bottom: 1px solid #f0ece3; font-size: 12px; text-align: left;
-  overflow: hidden; text-overflow: ellipsis;
+  padding: 7px 10px; border-bottom: 1px solid #f0ece3; font-size: 12px; text-align: left;
+  vertical-align: middle; overflow: hidden; text-overflow: ellipsis;
 }
-.list-view th { background: #F7F3EC; font-weight: 600; color: var(--ink); position: sticky; top: 0; z-index: 5; white-space: normal; }
+.list-view th {
+  background: #F7F3EC; font-weight: 600; color: var(--ink); position: sticky; top: 0; z-index: 5;
+  white-space: nowrap; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+  box-shadow: inset 0 -1px 0 #e3dbcb;
+}
+.list-view tbody tr { transition: background 0.12s ease; }
+.list-view tbody tr:hover { background: #F3EFE6; }
 .list-view tr.flagged { background: #FBF4E8; }
 .cell-nom { cursor: pointer; font-weight: 600; color: var(--forest); }
-.cell-clamp {
+.cell-nom:hover { text-decoration: underline; }
+.clamp-2 {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden; white-space: normal; word-break: break-word; line-height: 1.25;
+  overflow: hidden; white-space: normal; word-break: break-word; line-height: 1.3;
 }
 .cell-wrap { white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
 .list-view select { padding: 4px 6px; border-radius: 4px; border: 1.5px solid #ccc; font-size: 11.5px; font-family: inherit; max-width: 100%; }
@@ -169,6 +183,27 @@
   font-family: inherit; cursor: pointer;
 }
 .cell-check { text-align: center; }
+
+/* Colonne Statuts : icônes-bascule compactes (remplace 4 colonnes de cases) */
+.th-flags { text-align: center; }
+.cell-flags { text-align: center; }
+.flag-toggles { display: flex; gap: 2px; justify-content: center; align-items: center; }
+.flag-toggle {
+  border: none; background: transparent; cursor: pointer; padding: 3px;
+  font-size: 14px; line-height: 1; border-radius: 6px;
+  filter: grayscale(1); opacity: 0.3; transition: opacity 0.12s ease, filter 0.12s ease, background 0.12s ease, transform 0.08s ease;
+}
+.flag-toggle:hover { opacity: 0.75; background: #EFE9DD; }
+.flag-toggle.on { filter: none; opacity: 1; background: #FBF1DD; }
+.flag-toggle.on:hover { background: #F6E7C6; }
+.flag-toggle:active { transform: scale(0.9); }
+
+/* Lien vers le site (B2B2C) : texte court "Lien" plutôt que l'URL complète */
+.site-link {
+  display: inline-block; color: var(--emeraude); text-decoration: none; font-weight: 600;
+  padding: 2px 8px; border: 1px solid #d7e3d0; border-radius: 12px; background: #F3F7F0; white-space: nowrap;
+}
+.site-link:hover { background: #E6F0E1; text-decoration: none; }
 
 /* Action cell */
 .action-cell { display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; }
@@ -297,3 +332,42 @@
 .weekly-history-list { list-style: none; margin: 10px 0 0; padding: 0; max-height: 180px; overflow-y: auto; border-top: 1px solid #f0ece3; }
 .weekly-history-list li { padding: 6px 0; border-bottom: 1px solid #f0ece3; font-size: 12.5px; color: #6b6459; }
 .weekly-history-toggle { font-size: 12px; color: var(--emeraude); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: inherit; padding: 0; margin-top: 10px; }
+
+/* ===== Ergonomie : feedback, focus, pagination, densité ===== */
+
+/* Flash discret confirmant l'enregistrement d'un champ */
+@keyframes row-saved-flash {
+  0% { background: #DCEEC6; }
+  100% { background: transparent; }
+}
+.list-view tbody tr.row-flash td { animation: row-saved-flash 0.85s ease-out; }
+
+/* Focus clavier visible et cohérent sur tous les éléments interactifs */
+.list-view select:focus-visible,
+.list-view .flag-toggle:focus-visible,
+.list-view .site-link:focus-visible,
+.filters-row input:focus-visible,
+.filters-row select:focus-visible,
+.multiselect-btn:focus-visible,
+.clear-filters-btn:focus-visible,
+.pagination button:focus-visible {
+  outline: 2px solid var(--emeraude); outline-offset: 1px;
+}
+
+/* Champs interactifs : curseur explicite + survol */
+.list-view select { cursor: pointer; transition: border-color 0.12s ease; }
+.list-view select:hover { border-color: var(--forest); }
+
+/* Lignes plus régulières et confortables */
+.list-view tbody td { height: 34px; }
+.list-view tbody tr:last-child td { border-bottom: none; }
+
+/* Pagination plus lisible */
+.pagination-info { display: flex; flex-direction: column; align-items: center; line-height: 1.3; color: var(--ink); font-weight: 500; }
+.pagination-page { font-size: 11px; color: #948c7f; font-weight: 400; }
+.pagination button { transition: background 0.12s ease; }
+.pagination button:not(:disabled):hover { background: #EFE9DD; }
+
+/* État vide plus accueillant */
+.empty-row { font-size: 13px; }
+.empty-row .link-btn { margin-left: 4px; }

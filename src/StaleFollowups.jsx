@@ -110,7 +110,7 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filte
           <tbody>
             {stale.map((p) => (
               <tr key={p.id} className={ageClass(daysAgo(p.derniere_maj))}>
-                <td className="cell-nom cell-clamp" onClick={() => onOpen(p)}>{p.nom}</td>
+                <td className="cell-nom" onClick={() => onOpen(p)}><span className="clamp-2">{p.nom}</span></td>
                 <td>{p.segment}</td>
                 <td>{p.type}</td>
                 <td>{p.departement || '—'}</td>

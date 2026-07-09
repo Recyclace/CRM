@@ -11,8 +11,10 @@ const DEFAULT_FILTERS = { search: '', type: [], region: [], departement: [], sta
 
 export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate, filters = DEFAULT_FILTERS, setFilters }) {
   const [page, setPage] = useState(0)
+  const [flashId, setFlashId] = useState(null)
   const isB2B = segmentLabel === 'B2B'
   const leadLabel = isB2B ? 'Lead chaud' : 'Lead intéressé'
+  const colCount = isB2B ? 11 : 12
 
   function set(field, value) {
     setFilters((f) => {
@@ -20,6 +22,18 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
       if (field === 'region') next.departement = []
       return next
     })
+    setPage(0)
+  }
+
+  const activeFilterCount =
+    (filters.search.trim() ? 1 : 0) +
+    filters.type.length + filters.region.length + filters.departement.length +
+    filters.statut.length + filters.assignedTo.length +
+    (filters.leadChaud ? 1 : 0) + (filters.standBy ? 1 : 0) +
+    (filters.fftEngage ? 1 : 0) + (filters.important ? 1 : 0)
+
+  function clearFilters() {
+    setFilters((f) => ({ ...DEFAULT_FILTERS, sortBy: f.sortBy || 'nom' }))
     setPage(0)
   }
 
@@ -72,6 +86,8 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
 
   async function updateField(prospect, patch) {
     onLocalUpdate({ ...prospect, ...patch })
+    setFlashId(prospect.id)
+    setTimeout(() => setFlashId((id) => (id === prospect.id ? null : id)), 850)
     const { data, error } = await supabase
       .from('prospects')
       .update({ ...patch, derniere_maj: new Date().toISOString().slice(0, 10) })
@@ -86,6 +102,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
     if (p.doublon_potentiel) classes.push('flagged')
     if (p.stand_by) classes.push('row-standby')
     if (p.statut === 'Sans retour') classes.push('row-sansretour')
+    if (p.id === flashId) classes.push('row-flash')
     return classes.join(' ')
   }
 
@@ -127,7 +144,14 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
           </label>
         </div>
         <div className="filters-row-2">
-          <div className="count-info">{filtered.length} / {prospects.length} {segmentLabel}</div>
+          <div className="count-info">
+            <strong>{filtered.length}</strong> / {prospects.length} {segmentLabel}
+            {activeFilterCount > 0 && (
+              <button className="clear-filters-btn" onClick={clearFilters} title="Réinitialiser tous les filtres">
+                ✕ Effacer les filtres ({activeFilterCount})
+              </button>
+            )}
+          </div>
           <ExportButton rows={filtered} filename={`${segmentLabel}-export.xlsx`} />
         </div>
       </div>
@@ -135,20 +159,10 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
       <div className="list-view">
         <table className="fixed-table prospects-cols">
           <colgroup>
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '6%' }} />
-            <col style={{ width: '6%' }} />
-            <col style={{ width: '4%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '6%' }} />
-            <col style={{ width: '16%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '4%' }} />
+            {(isB2B
+              ? ['14%', '8%', '7%', '5%', '9%', '14%', '6%', '6%', '15%', '9%', '7%']
+              : ['14%', '8%', '7%', '5%', '9%', '13%', '5%', '6%', '15%', '6%', '5%', '7%']
+            ).map((w, i) => <col key={i} style={{ width: w }} />)}
           </colgroup>
           <thead>
             <tr>
@@ -161,17 +175,15 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
               <th>Département</th>
               <th>Région</th>
               <th>Action / Commentaire</th>
-              <th>{leadLabel}</th>
-              <th>Stand by</th>
-              <th>Important</th>
-              {isB2B ? <th>FFT Engagé</th> : <th>Site web</th>}
+              <th className="th-flags" title={`${leadLabel} · Stand by · Important${isB2B ? ' · FFT engagé' : ''}`}>Statuts</th>
+              {!isB2B && <th>Site</th>}
               <th>Assigné à</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((p) => (
               <tr key={p.id} className={rowClass(p)}>
-                <td className="cell-nom cell-clamp" onClick={() => onOpen(p)}>{p.nom}</td>
+                <td className="cell-nom" onClick={() => onOpen(p)} title={`${p.nom} — cliquer pour ouvrir la fiche`}><span className="clamp-2">{p.nom}</span></td>
                 <td>
                   <select
                     className="status-select"
@@ -189,28 +201,33 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                   </select>
                 </td>
                 <td>{p.derniere_maj || '—'}</td>
-                <td className="cell-wrap">{formatMulti(p.telephone)}</td>
-                <td className="cell-wrap">{formatMulti(p.email)}</td>
+                <td className="cell-wrap" title={formatMulti(p.telephone)}>{formatMulti(p.telephone)}</td>
+                <td className="cell-wrap" title={formatMulti(p.email)}>{formatMulti(p.email)}</td>
                 <td>{p.departement || '—'}</td>
                 <td>{p.region || '—'}</td>
                 <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
-                <td className="cell-check">
-                  <input type="checkbox" checked={!!p.lead_chaud} onChange={(e) => updateField(p, { lead_chaud: e.target.checked })} />
+                <td className="cell-flags">
+                  <div className="flag-toggles">
+                    <button type="button" className={`flag-toggle${p.lead_chaud ? ' on' : ''}`}
+                      title={leadLabel} aria-label={leadLabel} aria-pressed={!!p.lead_chaud}
+                      onClick={() => updateField(p, { lead_chaud: !p.lead_chaud })}>🔥</button>
+                    <button type="button" className={`flag-toggle${p.stand_by ? ' on' : ''}`}
+                      title="Stand by" aria-label="Stand by" aria-pressed={!!p.stand_by}
+                      onClick={() => updateField(p, { stand_by: !p.stand_by })}>⏸️</button>
+                    <button type="button" className={`flag-toggle${p.important ? ' on' : ''}`}
+                      title="Important" aria-label="Important" aria-pressed={!!p.important}
+                      onClick={() => updateField(p, { important: !p.important })}>⭐</button>
+                    {isB2B && (
+                      <button type="button" className={`flag-toggle${p.fft_engage === 'Oui' ? ' on' : ''}`}
+                        title="FFT engagé" aria-label="FFT engagé" aria-pressed={p.fft_engage === 'Oui'}
+                        onClick={() => updateField(p, { fft_engage: p.fft_engage === 'Oui' ? 'Non' : 'Oui' })}>🎾</button>
+                    )}
+                  </div>
                 </td>
-                <td className="cell-check">
-                  <input type="checkbox" checked={!!p.stand_by} onChange={(e) => updateField(p, { stand_by: e.target.checked })} />
-                </td>
-                <td className="cell-check">
-                  <input type="checkbox" checked={!!p.important} onChange={(e) => updateField(p, { important: e.target.checked })} />
-                </td>
-                {isB2B ? (
-                  <td className="cell-check">
-                    <input type="checkbox" checked={p.fft_engage === 'Oui'} onChange={(e) => updateField(p, { fft_engage: e.target.checked ? 'Oui' : 'Non' })} />
-                  </td>
-                ) : (
-                  <td className="cell-wrap">
+                {!isB2B && (
+                  <td className="cell-link">
                     {p.site_web
-                      ? <a href={p.site_web.startsWith('http') ? p.site_web : `https://${p.site_web}`} target="_blank" rel="noreferrer">{p.site_web}</a>
+                      ? <a href={p.site_web.startsWith('http') ? p.site_web : `https://${p.site_web}`} target="_blank" rel="noreferrer" className="site-link">Lien ↗</a>
                       : '—'}
                   </td>
                 )}
@@ -222,14 +239,28 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                 </td>
               </tr>
             ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={colCount} className="empty-row">
+                  {activeFilterCount > 0
+                    ? <>Aucun {segmentLabel} ne correspond aux filtres. <button className="link-btn" onClick={clearFilters}>Effacer les filtres</button></>
+                    : <>Aucun {segmentLabel} pour l'instant.</>}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      <div className="pagination">
-        <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>← Précédent</button>
-        <span>Page {page + 1} / {pageCount}</span>
-        <button disabled={page >= pageCount - 1} onClick={() => setPage((p) => p + 1)}>Suivant →</button>
-      </div>
+      {filtered.length > 0 && (
+        <div className="pagination">
+          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>← Précédent</button>
+          <span className="pagination-info">
+            {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + rows.length} sur {filtered.length}
+            <span className="pagination-page">Page {page + 1} / {pageCount}</span>
+          </span>
+          <button disabled={page >= pageCount - 1} onClick={() => setPage((p) => p + 1)}>Suivant →</button>
+        </div>
+      )}
     </div>
   )
 }
