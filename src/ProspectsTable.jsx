@@ -14,7 +14,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   const [flashId, setFlashId] = useState(null)
   const isB2B = segmentLabel === 'B2B'
   const leadLabel = isB2B ? 'Lead chaud' : 'Lead intéressé'
-  const colCount = isB2B ? 11 : 12
+  const colCount = isB2B ? 12 : 13
 
   function set(field, value) {
     setFilters((f) => {
@@ -160,13 +160,14 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         <table className="fixed-table prospects-cols">
           <colgroup>
             {(isB2B
-              ? ['14%', '8%', '7%', '5%', '9%', '14%', '6%', '6%', '15%', '9%', '7%']
-              : ['14%', '8%', '7%', '5%', '9%', '13%', '5%', '6%', '15%', '6%', '5%', '7%']
+              ? ['13%', '8%', '8%', '7%', '5%', '9%', '13%', '6%', '6%', '12%', '8%', '5%']
+              : ['12%', '8%', '7%', '6%', '5%', '8%', '12%', '5%', '6%', '12%', '6%', '5%', '8%']
             ).map((w, i) => <col key={i} style={{ width: w }} />)}
           </colgroup>
           <thead>
             <tr>
               <th>Nom</th>
+              <th>Ville</th>
               <th>Statut</th>
               <th>Action</th>
               <th>MAJ</th>
@@ -183,7 +184,11 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
           <tbody>
             {rows.map((p) => (
               <tr key={p.id} className={rowClass(p)}>
-                <td className="cell-nom" onClick={() => onOpen(p)} title={`${p.nom} — cliquer pour ouvrir la fiche`}><span className="clamp-2">{p.nom}</span></td>
+                <td className="cell-nom" onClick={() => onOpen(p)} title={`${p.nom} — cliquer pour ouvrir la fiche`}>
+                  <span className="clamp-2">{p.nom}</span>
+                  {!isB2B && p.groupe && <span className="cell-sub">{p.groupe}</span>}
+                </td>
+                <td className="cell-wrap" title={p.ville || ''}>{p.ville || '—'}</td>
                 <td>
                   <select
                     className="status-select"
@@ -205,7 +210,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                 <td className="cell-wrap" title={formatMulti(p.email)}>{formatMulti(p.email)}</td>
                 <td>{p.departement || '—'}</td>
                 <td>{p.region || '—'}</td>
-                <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
+                <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} onOpen={() => onOpen(p)} /></td>
                 <td className="cell-flags">
                   <div className="flag-toggles">
                     <button type="button" className={`flag-toggle${p.lead_chaud ? ' on' : ''}`}

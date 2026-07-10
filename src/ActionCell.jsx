@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
 
-export default function ActionCell({ prospect, onUpdated }) {
+export default function ActionCell({ prospect, onUpdated, onOpen }) {
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -34,10 +34,19 @@ export default function ActionCell({ prospect, onUpdated }) {
   return (
     <div className="action-cell">
       {preview && (
-        <div className="action-history" onClick={() => setExpanded((e) => !e)}>
+        <div
+          className={`action-history${onOpen ? ' clickable-open' : ''}`}
+          title={onOpen ? 'Cliquer pour ouvrir la fiche' : undefined}
+          onClick={() => (onOpen ? onOpen() : setExpanded((e) => !e))}
+        >
           {expanded ? preview : lastTwo}
           {hasMore && (
-            <span className="expand-hint">{expanded ? ' (réduire)' : " (voir tout l'historique)"}</span>
+            <span
+              className="expand-hint"
+              onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v) }}
+            >
+              {expanded ? ' (réduire)' : " (voir tout l'historique)"}
+            </span>
           )}
         </div>
       )}

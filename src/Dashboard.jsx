@@ -11,11 +11,12 @@ function computeKpis(prospects) {
   const signes = prospects.filter((p) => p.statut === 'Devis signé').length
   const leadsChauds = prospects.filter((p) => p.lead_chaud).length
   const standBy = prospects.filter((p) => p.stand_by).length
+  const fftEngages = prospects.filter((p) => p.fft_engage === 'Oui').length
   const relances = prospects.filter((p) => p.statut === 'Propale envoyée' && daysAgo(p.derniere_maj) > 14).length
   const propalesEffectives = prospects.filter(isPropaleEffective).length
   const devisEnvoyes = prospects.filter((p) => p.statut === 'Devis envoyé').length
   const tauxConversion = propalesEffectives ? ((signes / propalesEffectives) * 100).toFixed(1) : '0.0'
-  return { total, b2b, b2b2c, signes, leadsChauds, standBy, relances, propalesEffectives, devisEnvoyes, tauxConversion }
+  return { total, b2b, b2b2c, signes, leadsChauds, standBy, fftEngages, relances, propalesEffectives, devisEnvoyes, tauxConversion }
 }
 
 export default function Dashboard({ prospects, onOpen, filters = { region: [], segment: [] }, setFilters }) {
@@ -101,13 +102,14 @@ export default function Dashboard({ prospects, onOpen, filters = { region: [], s
         <div className="kpi-card"><div className="kpi-value">{kpis.total}</div><div className="kpi-label">Total prospects</div></div>
         <div className="kpi-card"><div className="kpi-value">{kpis.b2b}</div><div className="kpi-label">B2B</div></div>
         <div className="kpi-card"><div className="kpi-value">{kpis.b2b2c}</div><div className="kpi-label">B2B2C</div></div>
-        <div className="kpi-card"><div className="kpi-value">{kpis.propalesEffectives}</div><div className="kpi-label">Propales envoyées</div></div>
-        <div className="kpi-card"><div className="kpi-value">{kpis.devisEnvoyes}</div><div className="kpi-label">Devis envoyés</div></div>
-        <div className="kpi-card"><div className="kpi-value">{kpis.signes}</div><div className="kpi-label">Devis signés</div></div>
         <div className="kpi-card"><div className="kpi-value">{kpis.tauxConversion}%</div><div className="kpi-label">Taux de conversion (signés / propales)</div></div>
+        <div className="kpi-card"><div className="kpi-value">{kpis.propalesEffectives}</div><div className="kpi-label">Propales envoyées</div></div>
+        <div className="kpi-card"><div className="kpi-value">{kpis.devisEnvoyes}</div><div className="kpi-label">Devis envoyé en attente de retour</div></div>
+        <div className="kpi-card kpi-green"><div className="kpi-value">{kpis.signes}</div><div className="kpi-label">Devis signés</div></div>
+        <div className="kpi-card kpi-red"><div className="kpi-value">{kpis.relances}</div><div className="kpi-label">Propositions en retard (+14j)</div></div>
         <div className="kpi-card warn"><div className="kpi-value">{kpis.leadsChauds}</div><div className="kpi-label">Leads chauds</div></div>
-        <div className="kpi-card"><div className="kpi-value">{kpis.standBy}</div><div className="kpi-label">Stand by</div></div>
-        <div className="kpi-card danger"><div className="kpi-value">{kpis.relances}</div><div className="kpi-label">Propositions en retard (+14j)</div></div>
+        <div className="kpi-card kpi-amber"><div className="kpi-value">{kpis.standBy}</div><div className="kpi-label">Stand by</div></div>
+        <div className="kpi-card"><div className="kpi-value">{kpis.fftEngages}</div><div className="kpi-label">FFT engagé</div></div>
       </div>
 
       <div className="chart-card">

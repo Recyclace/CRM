@@ -1,4 +1,4 @@
-import { nameSort } from './constants'
+import { sortByDate } from './constants'
 
 const COLUMNS = [
   { key: 'propale', label: 'Propale envoyée', filter: (p) => p.statut === 'Propale envoyée' },
@@ -11,7 +11,8 @@ export default function SimpleKanban({ prospects, onOpen }) {
   return (
     <div className="kanban-board">
       {COLUMNS.map((col) => {
-        const items = prospects.filter(col.filter).sort(nameSort)
+        // Tri par date de dernière MAJ, de la plus ancienne à la plus récente
+        const items = prospects.filter(col.filter).sort((a, b) => sortByDate(a, b, 'asc'))
         return (
           <div key={col.key} className="kanban-col">
             <div className="kanban-col-header">

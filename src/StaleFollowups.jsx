@@ -118,7 +118,7 @@ export default function StaleFollowups({ prospects, onOpen, onLocalUpdate, filte
                 <td className="cell-wrap">{formatMulti(p.telephone)}</td>
                 <td className="cell-wrap">{formatMulti(p.email)}</td>
                 <td>{p.region || '—'}</td>
-                <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} /></td>
+                <td className="cell-action"><ActionCell prospect={p} onUpdated={onLocalUpdate} onOpen={() => onOpen(p)} /></td>
               </tr>
             ))}
             {stale.length === 0 && (

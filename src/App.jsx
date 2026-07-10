@@ -8,7 +8,7 @@ import StaleFollowups from './StaleFollowups'
 import EditModal from './EditModal'
 import ImportBanner from './ImportBanner'
 import Settings from './Settings'
-import WeeklySummary from './WeeklySummary'
+import WeeklyReport from './WeeklyReport'
 import { TYPES_B2B, TYPES_B2B2C } from './constants'
 import './App.css'
 
@@ -25,7 +25,6 @@ export default function App() {
   const [tab, setTab] = useState('dashboard')
   const [selected, setSelected] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [showWeekly, setShowWeekly] = useState(false)
   const channelRef = useRef(null)
 
   // Filtres persistants par onglet : conservés en mémoire tant que la session dure,
@@ -129,6 +128,8 @@ export default function App() {
     mainContent = <ProspectsTable prospects={b2b2cProspects} types={TYPES_B2B2C} segmentLabel="B2B2C" onOpen={setSelected} onLocalUpdate={handleLocalUpdate} filters={b2b2cFilters} setFilters={setB2b2cFilters} />
   } else if (tab === 'relances') {
     mainContent = <StaleFollowups prospects={prospects} onOpen={setSelected} onLocalUpdate={handleLocalUpdate} filters={relancesFilters} setFilters={setRelancesFilters} />
+  } else if (tab === 'synthese') {
+    mainContent = <WeeklyReport />
   }
 
   return (
@@ -142,10 +143,10 @@ export default function App() {
           <button className={tab === 'b2b' ? 'active' : ''} onClick={() => setTab('b2b')}>B2B</button>
           <button className={tab === 'b2b2c' ? 'active' : ''} onClick={() => setTab('b2b2c')}>B2B2C</button>
           <button className={tab === 'relances' ? 'active tab-ocre' : 'tab-ocre'} onClick={() => setTab('relances')}>Relances en retard</button>
+          <button className={tab === 'synthese' ? 'active' : ''} onClick={() => setTab('synthese')}>Synthèse</button>
         </nav>
         {loading && <span className="loading-pill">Chargement...</span>}
         {fetchWarning && <span className="loading-pill warn-pill">{fetchWarning}</span>}
-        <button className="weekly-btn" onClick={() => setShowWeekly(true)}>📊 Synthèse hebdomadaire</button>
         <div className="user-info header-user">
           {session.user.email} · <button className="link-btn" onClick={() => setShowSettings(true)}>Paramètres</button> · <button className="link-btn" onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
         </div>
@@ -158,9 +159,6 @@ export default function App() {
       )}
       {showSettings && (
         <Settings userEmail={session.user.email} onClose={() => setShowSettings(false)} />
-      )}
-      {showWeekly && (
-        <WeeklySummary onClose={() => setShowWeekly(false)} />
       )}
     </div>
   )
