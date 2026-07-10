@@ -211,6 +211,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             )}
           </div>
           <div className="filters-row-2-actions">
+            <button className="btn-primary new-fiche-btn" onClick={() => onOpen({ _isNew: true, segment: segmentLabel, type: '', statut: 'À contacter', lead_chaud: false, stand_by: false, important: false, fft_engage: 'Non', action_commentaire: '', prochaine_action: null, assigned_to: null })} title="Créer une nouvelle fiche client">＋ Nouvelle fiche</button>
             <button className="undo-btn" onClick={undoLast} disabled={undoStack.length === 0} title="Annuler la dernière action (comme Ctrl+Z)">↶ Annuler</button>
             {selectedIds.size > 0 && (
               <button className="btn-secondary bulk-comment-btn" onClick={() => setBulkOpen(true)}>💬 Commentaire global ({selectedIds.size})</button>

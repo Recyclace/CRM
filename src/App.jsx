@@ -102,7 +102,11 @@ export default function App() {
   }, [session])
 
   function handleLocalUpdate(updated) {
-    setProspects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+    setProspects((prev) => (
+      prev.some((p) => p.id === updated.id)
+        ? prev.map((p) => (p.id === updated.id ? updated : p))
+        : [...prev, updated]
+    ))
   }
 
   function handleSaved(updated) {

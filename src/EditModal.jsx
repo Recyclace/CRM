@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
-import { STATUSES, ASSIGNEES, PROCHAINES_ACTIONS } from './constants'
+import { STATUSES, ASSIGNEES, PROCHAINES_ACTIONS, TYPES_B2B, TYPES_B2B2C } from './constants'
 
 export default function EditModal({ prospect, onClose, onSaved }) {
   const [form, setForm] = useState({ ...prospect })
@@ -8,11 +8,15 @@ export default function EditModal({ prospect, onClose, onSaved }) {
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
+  const isNew = !!prospect._isNew
+  const typeOptions = form.segment === 'B2B2C' ? TYPES_B2B2C : TYPES_B2B
+
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
   async function handleSave() {
+    if (!form.nom || !form.nom.trim()) { setErr('Le nom est obligatoire.'); return }
     setSaving(true)
     setErr('')
     let action_commentaire = form.action_commentaire || ''
@@ -42,12 +46,21 @@ export default function EditModal({ prospect, onClose, onSaved }) {
       // La date ne change que si une nouvelle note (commentaire) est ajoutée
       derniere_maj: newNote.trim() ? new Date().toISOString().slice(0, 10) : (form.derniere_maj || null),
     }
-    const { data, error } = await supabase
-      .from('prospects')
-      .update(payload)
-      .eq('id', prospect.id)
-      .select()
-      .single()
+    let data, error
+    if (isNew) {
+      ({ data, error } = await supabase
+        .from('prospects')
+        .insert({ ...payload, segment: form.segment, type: form.type || null })
+        .select()
+        .single())
+    } else {
+      ({ data, error } = await supabase
+        .from('prospects')
+        .update(payload)
+        .eq('id', prospect.id)
+        .select()
+        .single())
+    }
     setSaving(false)
     if (error) {
       setErr("Erreur lors de l'enregistrement : " + error.message)
@@ -60,12 +73,19 @@ export default function EditModal({ prospect, onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{form.nom}</h2>
+          <h2>{isNew ? 'Nouvelle fiche client' : form.nom}</h2>
           <button className="icon-btn" onClick={onClose}>✕</button>
         </div>
         <div className="modal-tags">
           <span className="tag">{form.segment}</span>
-          <span className="tag">{form.type}</span>
+          {isNew ? (
+            <select className="tag-select" value={form.type || ''} onChange={(e) => set('type', e.target.value)}>
+              <option value="">Type…</option>
+              {typeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          ) : (
+            <span className="tag">{form.type}</span>
+          )}
           {form.doublon_potentiel && <span className="tag warn">{form.doublon_potentiel}</span>}
           {form.a_verifier && <span className="tag warn">Statut à vérifier</span>}
         </div>

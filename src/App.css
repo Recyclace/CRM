@@ -278,6 +278,8 @@
 .undo-btn:hover:not(:disabled) { background: #EFE9DD; }
 .undo-btn:disabled { opacity: 0.4; cursor: default; }
 .bulk-comment-btn { white-space: nowrap; }
+.new-fiche-btn { white-space: nowrap; }
+.tag-select { padding: 3px 8px; border: 1px solid #ddd3c2; border-radius: 6px; font-size: 12px; font-family: inherit; background: #fff; color: var(--ink); }
 .bulk-modal { width: 480px; max-width: 92vw; }
 .list-view .cell-check input { cursor: pointer; }
 
