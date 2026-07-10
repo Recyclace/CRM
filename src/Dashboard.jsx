@@ -10,7 +10,7 @@ function computeKpis(prospects) {
   const b2b2c = prospects.filter((p) => p.segment === 'B2B2C').length
   const signes = prospects.filter((p) => p.statut === 'Devis signé').length
   const leadsChauds = prospects.filter((p) => p.lead_chaud).length
-  const standBy = prospects.filter((p) => p.stand_by).length
+  const standBy = prospects.filter((p) => p.statut === 'Stand by').length
   const fftEngages = prospects.filter((p) => p.fft_engage === 'Oui').length
   const relances = prospects.filter((p) => p.statut === 'Propale envoyée' && daysAgo(p.derniere_maj) > 14).length
   const propalesEffectives = prospects.filter(isPropaleEffective).length

@@ -4,6 +4,7 @@ export const STATUSES = [
   "Propale envoyée",
   "Devis envoyé",
   "Devis signé",
+  "Stand by",
   "Sans retour",
   "Abandon",
 ]
@@ -15,6 +16,7 @@ export const STATUS_COLORS = {
   "Propale envoyée": "#E0A800",
   "Devis envoyé": "#E0A800",
   "Devis signé": "#1F4A38",
+  "Stand by": "#5B7FB0",
   "Sans retour": "#B0B7BE",
   "Abandon": "#C0392B",
 }

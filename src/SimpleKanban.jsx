@@ -4,7 +4,7 @@ const COLUMNS = [
   { key: 'propale', label: 'Propale envoyée', filter: (p) => p.statut === 'Propale envoyée' },
   { key: 'devis', label: 'Devis envoyé', filter: (p) => p.statut === 'Devis envoyé' },
   { key: 'chaud', label: 'Lead chaud', filter: (p) => p.lead_chaud },
-  { key: 'standby', label: 'Stand by', filter: (p) => p.stand_by },
+  { key: 'standby', label: 'Stand by', filter: (p) => p.statut === 'Stand by' },
 ]
 
 export default function SimpleKanban({ prospects, onOpen }) {

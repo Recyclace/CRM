@@ -39,7 +39,8 @@ export default function EditModal({ prospect, onClose, onSaved }) {
       important: form.important,
       assigned_to: form.assigned_to || null,
       action_commentaire,
-      derniere_maj: new Date().toISOString().slice(0, 10),
+      // La date ne change que si une nouvelle note (commentaire) est ajoutée
+      derniere_maj: newNote.trim() ? new Date().toISOString().slice(0, 10) : (form.derniere_maj || null),
     }
     const { data, error } = await supabase
       .from('prospects')
@@ -126,9 +127,6 @@ export default function EditModal({ prospect, onClose, onSaved }) {
         <div className="modal-checkboxes">
           <label className="checkbox-inline">
             <input type="checkbox" checked={!!form.lead_chaud} onChange={(e) => set('lead_chaud', e.target.checked)} /> Lead chaud
-          </label>
-          <label className="checkbox-inline">
-            <input type="checkbox" checked={!!form.stand_by} onChange={(e) => set('stand_by', e.target.checked)} /> Stand by
           </label>
           <label className="checkbox-inline">
             <input type="checkbox" checked={!!form.important} onChange={(e) => set('important', e.target.checked)} /> Important

@@ -9,20 +9,21 @@ const UNASSIGNED = '#E7E0D4'
 
 // Régions métropolitaines positionnées ~géographiquement sur une grille 5x5.
 // L'Île-de-France est gérée par département dans l'encart de droite.
+// Grille 4 colonnes, tuiles uniformes, disposition ~géographique et alignée
 const REGIONS = [
+  { name: 'Bretagne', c: 1, r: 1 },
   { name: 'Normandie', c: 2, r: 1 },
   { name: 'Hauts-de-France', c: 3, r: 1 },
-  { name: 'Grand Est', c: 4, r: 1, cspan: 2 },
-  { name: 'Bretagne', c: 1, r: 2 },
-  { name: 'Île-de-France', c: 3, r: 2, idf: true },
-  { name: 'Bourgogne-Franche-Comté', c: 4, r: 2, cspan: 2 },
-  { name: 'Pays de la Loire', c: 1, r: 3 },
-  { name: 'Centre-Val de Loire', c: 3, r: 3 },
-  { name: 'Auvergne-Rhône-Alpes', c: 4, r: 3, cspan: 2, rspan: 2 },
-  { name: 'Nouvelle-Aquitaine', c: 1, r: 4, cspan: 2 },
-  { name: 'Occitanie', c: 2, r: 5, cspan: 2 },
-  { name: "Provence-Alpes-Côte d'Azur", c: 4, r: 5 },
-  { name: 'Corse', c: 5, r: 5 },
+  { name: 'Grand Est', c: 4, r: 1 },
+  { name: 'Pays de la Loire', c: 1, r: 2 },
+  { name: 'Île-de-France', c: 2, r: 2, idf: true },
+  { name: 'Centre-Val de Loire', c: 3, r: 2 },
+  { name: 'Bourgogne-Franche-Comté', c: 4, r: 2 },
+  { name: 'Nouvelle-Aquitaine', c: 1, r: 3 },
+  { name: 'Occitanie', c: 2, r: 3 },
+  { name: 'Auvergne-Rhône-Alpes', c: 3, r: 3 },
+  { name: "Provence-Alpes-Côte d'Azur", c: 4, r: 3 },
+  { name: 'Corse', c: 4, r: 4 },
 ]
 
 // Départements d'Île-de-France, grille 3x3 (~géographique)

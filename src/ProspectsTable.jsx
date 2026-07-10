@@ -12,9 +12,14 @@ const DEFAULT_FILTERS = { search: '', type: [], region: [], departement: [], sta
 export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate, filters = DEFAULT_FILTERS, setFilters }) {
   const [page, setPage] = useState(0)
   const [flashId, setFlashId] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(() => new Set())
+  const [undoStack, setUndoStack] = useState([])
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkSaving, setBulkSaving] = useState(false)
   const isB2B = segmentLabel === 'B2B'
   const leadLabel = isB2B ? 'Lead chaud' : 'Lead intéressé'
-  const colCount = isB2B ? 12 : 13
+  const colCount = isB2B ? 12 : 14
 
   function set(field, value) {
     setFilters((f) => {
@@ -29,7 +34,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
     (filters.search.trim() ? 1 : 0) +
     filters.type.length + filters.region.length + filters.departement.length +
     filters.statut.length + filters.assignedTo.length +
-    (filters.leadChaud ? 1 : 0) + (filters.standBy ? 1 : 0) +
+    (filters.leadChaud ? 1 : 0) +
     (filters.fftEngage ? 1 : 0) + (filters.important ? 1 : 0)
 
   function clearFilters() {
@@ -56,7 +61,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   const filtered = useMemo(() => {
     const s = filters.search.trim().toLowerCase()
     const sortBy = filters.sortBy || 'nom'
-    const flagsChecked = filters.leadChaud || filters.standBy || filters.fftEngage || filters.important
+    const flagsChecked = filters.leadChaud || filters.fftEngage || filters.important
     return prospects
       .filter((p) => {
         if (filters.type.length && !filters.type.includes(p.type)) return false
@@ -65,7 +70,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         if (filters.statut.length && !filters.statut.includes(p.statut)) return false
         if (filters.assignedTo.length && !filters.assignedTo.includes(p.assigned_to)) return false
         if (flagsChecked) {
-          const matches = (filters.leadChaud && p.lead_chaud) || (filters.standBy && p.stand_by) || (filters.fftEngage && p.fft_engage === 'Oui') || (filters.important && p.important)
+          const matches = (filters.leadChaud && p.lead_chaud) || (filters.fftEngage && p.fft_engage === 'Oui') || (filters.important && p.important)
           if (!matches) return false
         }
         if (s) {
@@ -84,23 +89,80 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const rows = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
+  function pushUndo(items) {
+    setUndoStack((s) => [...s.slice(-19), items])
+  }
+
+  // La colonne "Dernière MAJ" ne change QUE lors d'un ajout de commentaire.
+  // Modifier un statut, une case ou une attribution ne met PAS à jour la date.
   async function updateField(prospect, patch) {
+    pushUndo([{ id: prospect.id, prev: { ...prospect } }])
     onLocalUpdate({ ...prospect, ...patch })
     setFlashId(prospect.id)
     setTimeout(() => setFlashId((id) => (id === prospect.id ? null : id)), 850)
     const { data, error } = await supabase
       .from('prospects')
-      .update({ ...patch, derniere_maj: new Date().toISOString().slice(0, 10) })
+      .update(patch)
       .eq('id', prospect.id)
       .select()
       .single()
     if (!error && data) onLocalUpdate(data)
   }
 
+  const UNDO_FIELDS = ['statut', 'prochaine_action', 'lead_chaud', 'stand_by', 'important', 'fft_engage', 'assigned_to', 'action_commentaire', 'derniere_maj']
+  async function undoLast() {
+    if (undoStack.length === 0) return
+    const items = undoStack[undoStack.length - 1]
+    setUndoStack((s) => s.slice(0, -1))
+    for (const it of items) {
+      onLocalUpdate(it.prev)
+      const restore = {}
+      UNDO_FIELDS.forEach((f) => { restore[f] = it.prev[f] ?? null })
+      await supabase.from('prospects').update(restore).eq('id', it.id)
+    }
+  }
+
+  function toggleRow(id) {
+    setSelectedIds((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+  function toggleAllOnPage() {
+    setSelectedIds((s) => {
+      const n = new Set(s)
+      const allSel = rows.length > 0 && rows.every((p) => n.has(p.id))
+      if (allSel) rows.forEach((p) => n.delete(p.id))
+      else rows.forEach((p) => n.add(p.id))
+      return n
+    })
+  }
+
+  async function applyBulkComment() {
+    const text = bulkText.trim()
+    if (!text) return
+    setBulkSaving(true)
+    const today = new Date().toLocaleDateString('fr-FR')
+    const stamped = `${today} : ${text}`
+    const maj = new Date().toISOString().slice(0, 10)
+    const undoItems = []
+    for (const id of selectedIds) {
+      const p = prospects.find((x) => x.id === id)
+      if (!p) continue
+      undoItems.push({ id, prev: { ...p } })
+      const merged = p.action_commentaire ? `${stamped}\n${p.action_commentaire}` : stamped
+      const patch = { action_commentaire: merged, derniere_maj: maj }
+      onLocalUpdate({ ...p, ...patch })
+      await supabase.from('prospects').update(patch).eq('id', id)
+    }
+    if (undoItems.length) pushUndo(undoItems)
+    setBulkSaving(false)
+    setBulkOpen(false)
+    setBulkText('')
+    setSelectedIds(new Set())
+  }
+
   function rowClass(p) {
     const classes = []
     if (p.doublon_potentiel) classes.push('flagged')
-    if (p.stand_by) classes.push('row-standby')
+    if (p.statut === 'Stand by') classes.push('row-standby')
     if (p.statut === 'Sans retour') classes.push('row-sansretour')
     if (p.id === flashId) classes.push('row-flash')
     return classes.join(' ')
@@ -128,10 +190,6 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             <input type="checkbox" checked={filters.leadChaud} onChange={(e) => set('leadChaud', e.target.checked)} />
             {leadLabel}
           </label>
-          <label className="checkbox-inline">
-            <input type="checkbox" checked={filters.standBy} onChange={(e) => set('standBy', e.target.checked)} />
-            Stand by
-          </label>
           {isB2B && (
             <label className="checkbox-inline">
               <input type="checkbox" checked={filters.fftEngage} onChange={(e) => set('fftEngage', e.target.checked)} />
@@ -152,7 +210,13 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
               </button>
             )}
           </div>
-          <ExportButton rows={filtered} filename={`${segmentLabel}-export.xlsx`} />
+          <div className="filters-row-2-actions">
+            <button className="undo-btn" onClick={undoLast} disabled={undoStack.length === 0} title="Annuler la dernière action (comme Ctrl+Z)">↶ Annuler</button>
+            {selectedIds.size > 0 && (
+              <button className="btn-secondary bulk-comment-btn" onClick={() => setBulkOpen(true)}>💬 Commentaire global ({selectedIds.size})</button>
+            )}
+            <ExportButton rows={filtered} filename={`${segmentLabel}-export.xlsx`} />
+          </div>
         </div>
       </div>
 
@@ -160,14 +224,15 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         <table className="fixed-table prospects-cols">
           <colgroup>
             {(isB2B
-              ? ['12%', '8%', '8%', '7%', '5%', '9%', '10%', '6%', '6%', '16%', '8%', '5%']
-              : ['12%', '7%', '7%', '6%', '5%', '8%', '9%', '5%', '6%', '16%', '6%', '5%', '8%']
+              ? ['3%', '13%', '8%', '8%', '5%', '10%', '11%', '6%', '7%', '16%', '8%', '5%']
+              : ['3%', '11%', '7%', '7%', '6%', '5%', '8%', '9%', '5%', '6%', '14%', '6%', '5%', '8%']
             ).map((w, i) => <col key={i} style={{ width: w }} />)}
           </colgroup>
           <thead>
             <tr>
+              <th className="cell-check"><input type="checkbox" aria-label="Tout sélectionner" checked={rows.length > 0 && rows.every((p) => selectedIds.has(p.id))} onChange={toggleAllOnPage} /></th>
               <th>Nom</th>
-              <th>Ville</th>
+              {!isB2B && <th>Ville</th>}
               <th>Statut</th>
               <th>Action</th>
               <th>MAJ</th>
@@ -176,7 +241,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
               <th>Département</th>
               <th>Région</th>
               <th>Action / Commentaire</th>
-              <th className="th-flags" title={`${leadLabel} · Stand by · Important${isB2B ? ' · FFT engagé' : ''}`}>Statuts</th>
+              <th className="th-flags" title={`${leadLabel} · Important${isB2B ? ' · FFT engagé' : ''}`}>Critère</th>
               {!isB2B && <th>Site</th>}
               <th>Assigné à</th>
             </tr>
@@ -184,11 +249,12 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
           <tbody>
             {rows.map((p) => (
               <tr key={p.id} className={rowClass(p)}>
+                <td className="cell-check"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleRow(p.id)} /></td>
                 <td className="cell-nom" onClick={() => onOpen(p)} title={`${p.nom} — cliquer pour ouvrir la fiche`}>
                   <span className="clamp-2">{p.nom}</span>
                   {!isB2B && p.groupe && <span className="cell-sub">{p.groupe}</span>}
                 </td>
-                <td className="cell-wrap" title={p.ville || ''}>{p.ville || '—'}</td>
+                {!isB2B && <td className="cell-wrap" title={p.ville || ''}>{p.ville || '—'}</td>}
                 <td>
                   <select
                     className="status-select"
@@ -216,9 +282,6 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                     <button type="button" className={`flag-toggle${p.lead_chaud ? ' on' : ''}`}
                       title={leadLabel} aria-label={leadLabel} aria-pressed={!!p.lead_chaud}
                       onClick={() => updateField(p, { lead_chaud: !p.lead_chaud })}>🔥</button>
-                    <button type="button" className={`flag-toggle${p.stand_by ? ' on' : ''}`}
-                      title="Stand by" aria-label="Stand by" aria-pressed={!!p.stand_by}
-                      onClick={() => updateField(p, { stand_by: !p.stand_by })}>⏸️</button>
                     <button type="button" className={`flag-toggle${p.important ? ' on' : ''}`}
                       title="Important" aria-label="Important" aria-pressed={!!p.important}
                       onClick={() => updateField(p, { important: !p.important })}>⭐</button>
@@ -264,6 +327,25 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             <span className="pagination-page">Page {page + 1} / {pageCount}</span>
           </span>
           <button disabled={page >= pageCount - 1} onClick={() => setPage((p) => p + 1)}>Suivant →</button>
+        </div>
+      )}
+
+      {bulkOpen && (
+        <div className="modal-overlay" onClick={() => !bulkSaving && setBulkOpen(false)}>
+          <div className="modal bulk-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Commentaire global</h2>
+              <button className="icon-btn" onClick={() => setBulkOpen(false)}>✕</button>
+            </div>
+            <p className="hint">Ce commentaire (daté du jour) sera ajouté à <strong>{selectedIds.size}</strong> ligne(s) sélectionnée(s), avec mise à jour de la date.</p>
+            <label className="block">Commentaire
+              <textarea rows={3} value={bulkText} onChange={(e) => setBulkText(e.target.value)} placeholder="Ex : relance groupée effectuée..." autoFocus />
+            </label>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setBulkOpen(false)} disabled={bulkSaving}>Annuler</button>
+              <button className="btn-primary" onClick={applyBulkComment} disabled={bulkSaving || !bulkText.trim()}>{bulkSaving ? 'Ajout...' : 'Terminé'}</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
