@@ -9,6 +9,7 @@ import EditModal from './EditModal'
 import ImportBanner from './ImportBanner'
 import Settings from './Settings'
 import WeeklyReport from './WeeklyReport'
+import RegionMap from './RegionMap'
 import { TYPES_B2B, TYPES_B2B2C } from './constants'
 import './App.css'
 
@@ -130,6 +131,8 @@ export default function App() {
     mainContent = <StaleFollowups prospects={prospects} onOpen={setSelected} onLocalUpdate={handleLocalUpdate} filters={relancesFilters} setFilters={setRelancesFilters} />
   } else if (tab === 'synthese') {
     mainContent = <WeeklyReport />
+  } else if (tab === 'repartition') {
+    mainContent = <RegionMap />
   }
 
   return (
@@ -144,6 +147,7 @@ export default function App() {
           <button className={tab === 'b2b2c' ? 'active' : ''} onClick={() => setTab('b2b2c')}>B2B2C</button>
           <button className={tab === 'relances' ? 'active tab-ocre' : 'tab-ocre'} onClick={() => setTab('relances')}>Relances en retard</button>
           <button className={tab === 'synthese' ? 'active' : ''} onClick={() => setTab('synthese')}>Synthèse</button>
+          <button className={tab === 'repartition' ? 'active' : ''} onClick={() => setTab('repartition')}>Répartition</button>
         </nav>
         {loading && <span className="loading-pill">Chargement...</span>}
         {fetchWarning && <span className="loading-pill warn-pill">{fetchWarning}</span>}

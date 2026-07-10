@@ -160,8 +160,8 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         <table className="fixed-table prospects-cols">
           <colgroup>
             {(isB2B
-              ? ['13%', '8%', '8%', '7%', '5%', '9%', '13%', '6%', '6%', '12%', '8%', '5%']
-              : ['12%', '8%', '7%', '6%', '5%', '8%', '12%', '5%', '6%', '12%', '6%', '5%', '8%']
+              ? ['12%', '8%', '8%', '7%', '5%', '9%', '10%', '6%', '6%', '16%', '8%', '5%']
+              : ['12%', '7%', '7%', '6%', '5%', '8%', '9%', '5%', '6%', '16%', '6%', '5%', '8%']
             ).map((w, i) => <col key={i} style={{ width: w }} />)}
           </colgroup>
           <thead>

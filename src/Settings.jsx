@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
+import SyncExcel from './SyncExcel'
 
 export default function Settings({ userEmail, onClose }) {
   const [pw1, setPw1] = useState('')
@@ -107,6 +108,8 @@ export default function Settings({ userEmail, onClose }) {
           <button type="submit" className="btn-secondary">Ajouter</button>
         </form>
         {recErr && <p className="error">{recErr}</p>}
+
+        <SyncExcel />
       </div>
     </div>
   )
