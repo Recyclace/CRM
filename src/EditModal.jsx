@@ -41,6 +41,7 @@ export default function EditModal({ prospect, onClose, onSaved }) {
       lead_chaud: form.lead_chaud,
       stand_by: form.stand_by,
       important: form.important,
+      a_suivre: form.a_suivre,
       assigned_to: form.assigned_to || null,
       action_commentaire,
       // La date ne change que si une nouvelle note (commentaire) est ajoutée
@@ -150,6 +151,9 @@ export default function EditModal({ prospect, onClose, onSaved }) {
           </label>
           <label className="checkbox-inline">
             <input type="checkbox" checked={!!form.important} onChange={(e) => set('important', e.target.checked)} /> Important
+          </label>
+          <label className="checkbox-inline">
+            <input type="checkbox" checked={!!form.a_suivre} onChange={(e) => set('a_suivre', e.target.checked)} /> À suivre
           </label>
         </div>
 

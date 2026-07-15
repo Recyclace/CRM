@@ -13,7 +13,7 @@ import RegionMap from './RegionMap'
 import { TYPES_B2B, TYPES_B2B2C } from './constants'
 import './App.css'
 
-const EMPTY_LIST_FILTERS = { search: '', type: [], region: [], departement: [], statut: [], assignedTo: [], leadChaud: false, standBy: false, fftEngage: false, important: false, sortBy: 'nom' }
+const EMPTY_LIST_FILTERS = { search: '', type: [], region: [], departement: [], statut: [], action: [], assignedTo: [], leadChaud: false, fftEngage: false, important: false, aSuivre: false, sortBy: 'nom' }
 const EMPTY_RELANCE_FILTERS = { search: '', segment: [], region: [], departement: [] }
 const EMPTY_DASHBOARD_FILTERS = { region: [], segment: [] }
 

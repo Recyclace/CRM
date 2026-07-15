@@ -24,7 +24,7 @@ export const STATUS_COLORS = {
 export const TYPES_B2B = ["Ligue / Comité", "Club de tennis", "Club de padel"]
 export const TYPES_B2B2C = ["Magasin spécialisé", "Grande distribution"]
 export const ASSIGNEES = ["Pierre", "Iouri", "Aurélie"]
-export const PROCHAINES_ACTIONS = ["Appel", "Mail", "Propale à faire", "A rencontrer"]
+export const PROCHAINES_ACTIONS = ["Appel", "Mail", "Relance", "Propale à faire", "A rencontrer"]
 
 // Tri alphabétique, les noms commençant par un chiffre passent à la fin
 export function nameSort(a, b) {

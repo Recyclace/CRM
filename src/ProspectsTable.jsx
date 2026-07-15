@@ -7,7 +7,7 @@ import CopyEmailsButton from './CopyEmailsButton'
 import MultiSelectDropdown from './MultiSelectDropdown'
 
 const PAGE_SIZE = 100
-const DEFAULT_FILTERS = { search: '', type: [], region: [], departement: [], statut: [], assignedTo: [], leadChaud: false, standBy: false, fftEngage: false, important: false, sortBy: 'nom' }
+const DEFAULT_FILTERS = { search: '', type: [], region: [], departement: [], statut: [], action: [], assignedTo: [], leadChaud: false, fftEngage: false, important: false, aSuivre: false, sortBy: 'nom' }
 
 export default function ProspectsTable({ prospects, types, segmentLabel, onOpen, onLocalUpdate, filters = DEFAULT_FILTERS, setFilters }) {
   const [page, setPage] = useState(0)
@@ -33,8 +33,8 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   const activeFilterCount =
     (filters.search.trim() ? 1 : 0) +
     filters.type.length + filters.region.length + filters.departement.length +
-    filters.statut.length + filters.assignedTo.length +
-    (filters.leadChaud ? 1 : 0) +
+    filters.statut.length + (filters.action?.length || 0) + filters.assignedTo.length +
+    (filters.leadChaud ? 1 : 0) + (filters.aSuivre ? 1 : 0) +
     (filters.fftEngage ? 1 : 0) + (filters.important ? 1 : 0)
 
   function clearFilters() {
@@ -61,16 +61,17 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   const filtered = useMemo(() => {
     const s = filters.search.trim().toLowerCase()
     const sortBy = filters.sortBy || 'nom'
-    const flagsChecked = filters.leadChaud || filters.fftEngage || filters.important
+    const flagsChecked = filters.leadChaud || filters.fftEngage || filters.important || filters.aSuivre
     return prospects
       .filter((p) => {
         if (filters.type.length && !filters.type.includes(p.type)) return false
         if (filters.region.length && !filters.region.includes(p.region)) return false
         if (filters.departement.length && !filters.departement.includes(p.departement)) return false
         if (filters.statut.length && !filters.statut.includes(p.statut)) return false
+        if (filters.action?.length && !filters.action.includes(p.prochaine_action)) return false
         if (filters.assignedTo.length && !filters.assignedTo.includes(p.assigned_to)) return false
         if (flagsChecked) {
-          const matches = (filters.leadChaud && p.lead_chaud) || (filters.fftEngage && p.fft_engage === 'Oui') || (filters.important && p.important)
+          const matches = (filters.leadChaud && p.lead_chaud) || (filters.fftEngage && p.fft_engage === 'Oui') || (filters.important && p.important) || (filters.aSuivre && p.a_suivre)
           if (!matches) return false
         }
         if (s) {
@@ -178,6 +179,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
           <MultiSelectDropdown label="Région" options={regions} selected={filters.region} onChange={(v) => set('region', v)} />
           <MultiSelectDropdown label="Département" options={departements} selected={filters.departement} onChange={(v) => set('departement', v)} />
           <MultiSelectDropdown label="Statut" options={STATUSES} selected={filters.statut} onChange={(v) => set('statut', v)} />
+          <MultiSelectDropdown label="Action" options={PROCHAINES_ACTIONS} selected={filters.action || []} onChange={(v) => set('action', v)} />
           <MultiSelectDropdown label="Assigné à" options={ASSIGNEES} selected={filters.assignedTo} onChange={(v) => set('assignedTo', v)} />
           <select value={filters.sortBy || 'nom'} onChange={(e) => set('sortBy', e.target.value)}>
             <option value="nom">Trier : Nom (A-Z)</option>
@@ -200,6 +202,10 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             <input type="checkbox" checked={filters.important} onChange={(e) => set('important', e.target.checked)} />
             Important
           </label>
+          <label className="checkbox-inline">
+            <input type="checkbox" checked={filters.aSuivre} onChange={(e) => set('aSuivre', e.target.checked)} />
+            À suivre
+          </label>
         </div>
         <div className="filters-row-2">
           <div className="count-info">
@@ -211,7 +217,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             )}
           </div>
           <div className="filters-row-2-actions">
-            <button className="btn-primary new-fiche-btn" onClick={() => onOpen({ _isNew: true, segment: segmentLabel, type: '', statut: 'À contacter', lead_chaud: false, stand_by: false, important: false, fft_engage: 'Non', action_commentaire: '', prochaine_action: null, assigned_to: null })} title="Créer une nouvelle fiche client">＋ Nouvelle fiche</button>
+            <button className="btn-primary new-fiche-btn" onClick={() => onOpen({ _isNew: true, segment: segmentLabel, type: '', statut: 'À contacter', lead_chaud: false, stand_by: false, important: false, a_suivre: false, fft_engage: 'Non', action_commentaire: '', prochaine_action: null, assigned_to: null })} title="Créer une nouvelle fiche client">＋ Nouvelle fiche</button>
             <button className="undo-btn" onClick={undoLast} disabled={undoStack.length === 0} title="Annuler la dernière action (comme Ctrl+Z)">↶ Annuler</button>
             {selectedIds.size > 0 && (
               <button className="btn-secondary bulk-comment-btn" onClick={() => setBulkOpen(true)}>💬 Commentaire global ({selectedIds.size})</button>
@@ -225,8 +231,8 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
         <table className="fixed-table prospects-cols">
           <colgroup>
             {(isB2B
-              ? ['3%', '13%', '8%', '8%', '5%', '10%', '11%', '6%', '7%', '16%', '8%', '5%']
-              : ['3%', '11%', '7%', '7%', '6%', '5%', '8%', '9%', '5%', '6%', '14%', '6%', '5%', '8%']
+              ? ['3%', '12%', '8%', '8%', '5%', '8%', '9%', '6%', '7%', '16%', '10%', '8%']
+              : ['3%', '11%', '7%', '7%', '6%', '5%', '7%', '8%', '5%', '6%', '14%', '8%', '5%', '8%']
             ).map((w, i) => <col key={i} style={{ width: w }} />)}
           </colgroup>
           <thead>
@@ -242,7 +248,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
               <th>Département</th>
               <th>Région</th>
               <th>Action / Commentaire</th>
-              <th className="th-flags" title={`${leadLabel} · Important${isB2B ? ' · FFT engagé' : ''}`}>Critère</th>
+              <th className="th-flags" title={`${leadLabel} · Important · À suivre${isB2B ? ' · FFT engagé' : ''}`}>Critère</th>
               {!isB2B && <th>Site</th>}
               <th>Assigné à</th>
             </tr>
@@ -286,6 +292,9 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
                     <button type="button" className={`flag-toggle${p.important ? ' on' : ''}`}
                       title="Important" aria-label="Important" aria-pressed={!!p.important}
                       onClick={() => updateField(p, { important: !p.important })}>⭐</button>
+                    <button type="button" className={`flag-toggle${p.a_suivre ? ' on' : ''}`}
+                      title="À suivre" aria-label="À suivre" aria-pressed={!!p.a_suivre}
+                      onClick={() => updateField(p, { a_suivre: !p.a_suivre })}>❗</button>
                     {isB2B && (
                       <button type="button" className={`flag-toggle${p.fft_engage === 'Oui' ? ' on' : ''}`}
                         title="FFT engagé" aria-label="FFT engagé" aria-pressed={p.fft_engage === 'Oui'}
