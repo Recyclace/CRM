@@ -279,6 +279,10 @@
 .undo-btn:disabled { opacity: 0.4; cursor: default; }
 .bulk-comment-btn { white-space: nowrap; }
 .new-fiche-btn { white-space: nowrap; }
+.bulk-select { padding: 6px 10px; border: 1px solid var(--forest); border-radius: 6px; font-size: 13px; font-family: inherit; background: #F3F7F0; color: var(--forest); cursor: pointer; font-weight: 500; }
+.btn-delete { padding: 9px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid #e0b4ab; background: #FBEAE7; color: #C0392B; font-family: inherit; font-weight: 500; }
+.btn-delete:hover { background: #F5D3CB; }
+.btn-delete:disabled { opacity: 0.5; cursor: default; }
 .tag-select { padding: 3px 8px; border: 1px solid #ddd3c2; border-radius: 6px; font-size: 12px; font-family: inherit; background: #fff; color: var(--ink); }
 .bulk-modal { width: 480px; max-width: 92vw; }
 .list-view .cell-check input { cursor: pointer; }

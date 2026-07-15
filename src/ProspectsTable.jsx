@@ -157,7 +157,23 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
     setBulkSaving(false)
     setBulkOpen(false)
     setBulkText('')
-    setSelectedIds(new Set())
+    // On garde la sélection active après l'ajout du commentaire
+  }
+
+  // Applique une même valeur (statut ou action) à toutes les lignes sélectionnées.
+  // Ne change PAS la date (seuls les commentaires la modifient).
+  async function applyBulkField(field, value) {
+    const ids = [...selectedIds]
+    const undoItems = []
+    for (const id of ids) {
+      const p = prospects.find((x) => x.id === id)
+      if (!p) continue
+      undoItems.push({ id, prev: { ...p } })
+      onLocalUpdate({ ...p, [field]: value })
+      await supabase.from('prospects').update({ [field]: value }).eq('id', id)
+    }
+    if (undoItems.length) pushUndo(undoItems)
+    // sélection conservée
   }
 
   function rowClass(p) {
@@ -220,8 +236,19 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
             <button className="btn-primary new-fiche-btn" onClick={() => onOpen({ _isNew: true, segment: segmentLabel, type: '', statut: 'À contacter', lead_chaud: false, stand_by: false, important: false, a_suivre: false, fft_engage: 'Non', action_commentaire: '', prochaine_action: null, assigned_to: null })} title="Créer une nouvelle fiche client">＋ Nouvelle fiche</button>
             <button className="undo-btn" onClick={undoLast} disabled={undoStack.length === 0} title="Annuler la dernière action (comme Ctrl+Z)">↶ Annuler</button>
             {selectedIds.size > 0 && (
-              <button className="btn-secondary bulk-comment-btn" onClick={() => setBulkOpen(true)}>💬 Commentaire global ({selectedIds.size})</button>
+              <>
+                <select className="bulk-select" value="" onChange={(e) => { if (e.target.value) applyBulkField('statut', e.target.value) }} title="Attribuer ce statut aux lignes sélectionnées">
+                  <option value="">Statut ▾ ({selectedIds.size})</option>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select className="bulk-select" value="" onChange={(e) => { if (e.target.value) applyBulkField('prochaine_action', e.target.value) }} title="Attribuer cette action aux lignes sélectionnées">
+                  <option value="">Action ▾ ({selectedIds.size})</option>
+                  {PROCHAINES_ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                </select>
+                <button className="btn-secondary bulk-comment-btn" onClick={() => setBulkOpen(true)}>💬 Commentaire ({selectedIds.size})</button>
+              </>
             )}
+            <CopyEmailsButton rows={selectedIds.size > 0 ? filtered.filter((p) => selectedIds.has(p.id)) : filtered} count={selectedIds.size} />
             <ExportButton rows={filtered} filename={`${segmentLabel}-export.xlsx`} />
           </div>
         </div>
@@ -244,7 +271,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
               <th>Action</th>
               <th>MAJ</th>
               <th>Téléphone</th>
-              <th>Mail <CopyEmailsButton rows={filtered} /></th>
+              <th>Mail</th>
               <th>Département</th>
               <th>Région</th>
               <th>Action / Commentaire</th>

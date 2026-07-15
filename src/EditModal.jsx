@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import { STATUSES, ASSIGNEES, PROCHAINES_ACTIONS, TYPES_B2B, TYPES_B2B2C } from './constants'
 
-export default function EditModal({ prospect, onClose, onSaved }) {
+export default function EditModal({ prospect, onClose, onSaved, onDeleted }) {
   const [form, setForm] = useState({ ...prospect })
   const [newNote, setNewNote] = useState('')
   const [saving, setSaving] = useState(false)
@@ -68,6 +68,19 @@ export default function EditModal({ prospect, onClose, onSaved }) {
       return
     }
     onSaved(data)
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Supprimer définitivement la fiche « ${form.nom} » ? Cette action est irréversible.`)) return
+    setSaving(true)
+    setErr('')
+    const { error } = await supabase.from('prospects').delete().eq('id', prospect.id)
+    setSaving(false)
+    if (error) {
+      setErr('Erreur lors de la suppression : ' + error.message)
+      return
+    }
+    if (onDeleted) onDeleted(prospect.id)
   }
 
   return (
@@ -169,6 +182,11 @@ export default function EditModal({ prospect, onClose, onSaved }) {
         {err && <p className="error">{err}</p>}
 
         <div className="modal-actions">
+          {!isNew && (
+            <button className="btn-delete" onClick={handleDelete} disabled={saving} style={{ marginRight: 'auto' }}>
+              Supprimer
+            </button>
+          )}
           <button className="btn-secondary" onClick={onClose}>Annuler</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Enregistrement...' : 'Enregistrer'}

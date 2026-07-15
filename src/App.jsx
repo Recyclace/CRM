@@ -114,6 +114,11 @@ export default function App() {
     setSelected(null)
   }
 
+  function handleDeleted(id) {
+    setProspects((prev) => prev.filter((p) => p.id !== id))
+    setSelected(null)
+  }
+
   const b2bProspects = useMemo(() => prospects.filter((p) => p.segment === 'B2B'), [prospects])
   const b2b2cProspects = useMemo(() => prospects.filter((p) => p.segment === 'B2B2C'), [prospects])
 
@@ -163,7 +168,7 @@ export default function App() {
         {mainContent}
       </main>
       {selected && (
-        <EditModal prospect={selected} onClose={() => setSelected(null)} onSaved={handleSaved} />
+        <EditModal prospect={selected} onClose={() => setSelected(null)} onSaved={handleSaved} onDeleted={handleDeleted} />
       )}
       {showSettings && (
         <Settings userEmail={session.user.email} onClose={() => setShowSettings(false)} />

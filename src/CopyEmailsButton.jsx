@@ -1,7 +1,11 @@
 import { useState } from 'react'
 
-export default function CopyEmailsButton({ rows }) {
+export default function CopyEmailsButton({ rows, count = 0 }) {
   const [copied, setCopied] = useState(false)
+
+  const nbEmails = new Set(
+    rows.flatMap((p) => (p.email || '').split(/[\n;,]+/)).map((e) => e.trim()).filter((e) => e.includes('@'))
+  ).size
 
   // Copie robuste : tente l'API Clipboard, sinon repli sur un textarea + execCommand
   // (nécessaire dans certains contextes/navigateurs où navigator.clipboard échoue).
@@ -46,8 +50,8 @@ export default function CopyEmailsButton({ rows }) {
   }
 
   return (
-    <button className="copy-emails-btn" onClick={handleCopy} title="Copier tous les emails de la sélection filtrée (séparés par des points-virgules, prêts à coller dans un mail)">
-      {copied ? 'Copié !' : 'Copier les mails'}
+    <button className="copy-emails-btn" onClick={handleCopy} title={count > 0 ? 'Copier les emails des lignes sélectionnées (séparés par des points-virgules)' : 'Copier tous les emails affichés (séparés par des points-virgules)'}>
+      {copied ? 'Copié !' : `Copier les mails (${nbEmails})`}
     </button>
   )
 }
