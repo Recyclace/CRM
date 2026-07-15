@@ -75,8 +75,11 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
           if (!matches) return false
         }
         if (s) {
-          const hay = [p.nom, p.contact, p.email, p.ville, p.region].filter(Boolean).join(' ').toLowerCase()
-          if (!hay.includes(s)) return false
+          const hay = [p.nom, p.contact, p.email, p.ville, p.region, p.telephone, p.action_commentaire].filter(Boolean).join(' ').toLowerCase()
+          const sDigits = s.replace(/\D/g, '')
+          const telDigits = (p.telephone || '').replace(/\D/g, '')
+          const matchTel = sDigits.length >= 3 && telDigits.includes(sDigits)
+          if (!hay.includes(s) && !matchTel) return false
         }
         return true
       })
@@ -189,7 +192,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
     <div className="prospects-table-wrap">
       <div className="filters-bar">
         <div className="filters-row">
-          <input className="search search-compact" type="text" placeholder="Rechercher..."
+          <input className="search search-compact" type="text" placeholder="Rechercher (nom, mail, téléphone, commentaire...)"
             value={filters.search} onChange={(e) => set('search', e.target.value)} />
           <MultiSelectDropdown label="Type" options={types} selected={filters.type} onChange={(v) => set('type', v)} />
           <MultiSelectDropdown label="Région" options={regions} selected={filters.region} onChange={(v) => set('region', v)} />
