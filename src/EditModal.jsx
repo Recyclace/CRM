@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
-import { STATUSES, ASSIGNEES, PROCHAINES_ACTIONS, TYPES_B2B, TYPES_B2B2C } from './constants'
+import { STATUSES, ASSIGNEES, PROCHAINES_ACTIONS, TYPES_B2B, TYPES_B2B2C, mergeComment } from './constants'
 
 export default function EditModal({ prospect, onClose, onSaved, onDeleted }) {
   const [form, setForm] = useState({ ...prospect })
@@ -21,9 +21,7 @@ export default function EditModal({ prospect, onClose, onSaved, onDeleted }) {
     setErr('')
     let action_commentaire = form.action_commentaire || ''
     if (newNote.trim()) {
-      const today = new Date().toLocaleDateString('fr-FR')
-      const stamped = `${today} : ${newNote.trim()}`
-      action_commentaire = action_commentaire ? `${stamped}\n${action_commentaire}` : stamped
+      action_commentaire = mergeComment(action_commentaire, newNote)
     }
     const payload = {
       nom: form.nom,

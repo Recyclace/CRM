@@ -4,7 +4,7 @@ export default function CopyEmailsButton({ rows, count = 0 }) {
   const [copied, setCopied] = useState(false)
 
   const nbEmails = new Set(
-    rows.flatMap((p) => (p.email || '').split(/[\n;,]+/)).map((e) => e.trim()).filter((e) => e.includes('@'))
+    rows.flatMap((p) => (p.email || '').split(/[\s,;/]+/)).map((e) => e.trim()).filter((e) => e.includes('@'))
   ).size
 
   // Copie robuste : tente l'API Clipboard, sinon repli sur un textarea + execCommand
@@ -36,7 +36,7 @@ export default function CopyEmailsButton({ rows, count = 0 }) {
 
   async function handleCopy() {
     const emails = rows
-      .flatMap((p) => (p.email || '').split(/[\n;,]+/))
+      .flatMap((p) => (p.email || '').split(/[\s,;/]+/))
       .map((e) => e.trim())
       .filter((e) => e.includes('@'))
     const unique = Array.from(new Set(emails))
@@ -50,7 +50,7 @@ export default function CopyEmailsButton({ rows, count = 0 }) {
   }
 
   return (
-    <button className="copy-emails-btn" onClick={handleCopy} title={count > 0 ? 'Copier les emails des lignes sélectionnées (séparés par des points-virgules)' : 'Copier tous les emails affichés (séparés par des points-virgules)'}>
+    <button className="btn-secondary copy-emails-btn" onClick={handleCopy} title={count > 0 ? 'Copier les emails des lignes sélectionnées (séparés par des points-virgules)' : 'Copier tous les emails affichés (séparés par des points-virgules)'}>
       {copied ? 'Copié !' : `Copier les mails (${nbEmails})`}
     </button>
   )

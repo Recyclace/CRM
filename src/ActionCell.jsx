@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
+import { mergeComment } from './constants'
 
 export default function ActionCell({ prospect, onUpdated, onOpen }) {
   const [note, setNote] = useState('')
@@ -9,10 +10,7 @@ export default function ActionCell({ prospect, onUpdated, onOpen }) {
   async function publish() {
     if (!note.trim()) return
     setSaving(true)
-    const today = new Date().toLocaleDateString('fr-FR')
-    const stamped = `${today} : ${note.trim()}`
-    const existing = prospect.action_commentaire || ''
-    const merged = existing ? `${stamped}\n${existing}` : stamped
+    const merged = mergeComment(prospect.action_commentaire, note)
     const { data, error } = await supabase
       .from('prospects')
       .update({ action_commentaire: merged, derniere_maj: new Date().toISOString().slice(0, 10) })

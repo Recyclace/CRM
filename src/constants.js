@@ -59,6 +59,24 @@ export function sortByDate(a, b, dir) {
   return dir === 'asc' ? da - db : db - da
 }
 
+// Ajoute un commentaire daté. Si un commentaire existe déjà pour aujourd'hui,
+// on ne crée pas une 2e ligne : on fusionne dans la ligne du jour avec " // ",
+// le plus récent en premier.
+export function mergeComment(existing, newText) {
+  const text = (newText || '').trim()
+  if (!text) return existing || ''
+  const today = new Date().toLocaleDateString('fr-FR')
+  const prefix = `${today} : `
+  const current = existing || ''
+  const lines = current ? current.split('\n') : []
+  if (lines.length && lines[0].startsWith(prefix)) {
+    const rest = lines[0].slice(prefix.length).trim()
+    lines[0] = rest ? `${prefix}${text} // ${rest}` : `${prefix}${text}`
+    return lines.join('\n')
+  }
+  return current ? `${prefix}${text}\n${current}` : `${prefix}${text}`
+}
+
 // Affiche plusieurs numéros/mails séparés par " / " plutôt qu'à la ligne (demande Pierre)
 export function formatMulti(value) {
   if (!value) return '—'

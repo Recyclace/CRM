@@ -288,11 +288,9 @@
 .list-view .cell-check input { cursor: pointer; }
 
 /* Boutons copier les mails */
-.copy-emails-btn {
-  font-size: 11px; padding: 2px 8px; margin-left: 6px; border: 1px solid #ddd3c2; border-radius: 10px;
-  background: #fff; cursor: pointer; font-family: inherit; color: var(--emeraude); vertical-align: middle;
-}
-.copy-emails-btn:hover { background: #F7F3EC; }
+/* Même format que les autres boutons de la barre d'actions */
+.copy-emails-btn { white-space: nowrap; }
+.deselect-btn { white-space: nowrap; }
 
 /* Bouton synthèse hebdomadaire dans le header */
 .weekly-btn {

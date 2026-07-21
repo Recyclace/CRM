@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { STATUSES, STATUS_COLORS, ASSIGNEES, PROCHAINES_ACTIONS, nameSort, sortByDate, formatMulti } from './constants'
+import { STATUSES, STATUS_COLORS, ASSIGNEES, PROCHAINES_ACTIONS, nameSort, sortByDate, formatMulti, mergeComment } from './constants'
 import ActionCell from './ActionCell'
 import ExportButton from './ExportButton'
 import CopyEmailsButton from './CopyEmailsButton'
@@ -14,6 +14,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   const [flashId, setFlashId] = useState(null)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [undoStack, setUndoStack] = useState([])
+  const [redoStack, setRedoStack] = useState([])
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkText, setBulkText] = useState('')
   const [bulkSaving, setBulkSaving] = useState(false)
@@ -95,6 +96,7 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
 
   function pushUndo(items) {
     setUndoStack((s) => [...s.slice(-19), items])
+    setRedoStack([]) // une nouvelle action annule la possibilité de "refaire"
   }
 
   // La colonne "Dernière MAJ" ne change QUE lors d'un ajout de commentaire.
@@ -114,16 +116,34 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
   }
 
   const UNDO_FIELDS = ['statut', 'prochaine_action', 'lead_chaud', 'stand_by', 'important', 'fft_engage', 'assigned_to', 'action_commentaire', 'derniere_maj']
-  async function undoLast() {
-    if (undoStack.length === 0) return
-    const items = undoStack[undoStack.length - 1]
-    setUndoStack((s) => s.slice(0, -1))
+  // Restaure un lot de valeurs et renvoie l'état d'avant (pour alimenter la pile inverse)
+  async function restoreItems(items) {
+    const inverse = []
     for (const it of items) {
+      const cur = prospects.find((x) => x.id === it.id)
+      if (cur) inverse.push({ id: it.id, prev: { ...cur } })
       onLocalUpdate(it.prev)
       const restore = {}
       UNDO_FIELDS.forEach((f) => { restore[f] = it.prev[f] ?? null })
       await supabase.from('prospects').update(restore).eq('id', it.id)
     }
+    return inverse
+  }
+
+  async function undoLast() {
+    if (undoStack.length === 0) return
+    const items = undoStack[undoStack.length - 1]
+    setUndoStack((s) => s.slice(0, -1))
+    const inverse = await restoreItems(items)
+    if (inverse.length) setRedoStack((s) => [...s.slice(-19), inverse])
+  }
+
+  async function redoLast() {
+    if (redoStack.length === 0) return
+    const items = redoStack[redoStack.length - 1]
+    setRedoStack((s) => s.slice(0, -1))
+    const inverse = await restoreItems(items)
+    if (inverse.length) setUndoStack((s) => [...s.slice(-19), inverse])
   }
 
   function toggleRow(id) {
@@ -143,15 +163,13 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
     const text = bulkText.trim()
     if (!text) return
     setBulkSaving(true)
-    const today = new Date().toLocaleDateString('fr-FR')
-    const stamped = `${today} : ${text}`
     const maj = new Date().toISOString().slice(0, 10)
     const undoItems = []
     for (const id of selectedIds) {
       const p = prospects.find((x) => x.id === id)
       if (!p) continue
       undoItems.push({ id, prev: { ...p } })
-      const merged = p.action_commentaire ? `${stamped}\n${p.action_commentaire}` : stamped
+      const merged = mergeComment(p.action_commentaire, text)
       const patch = { action_commentaire: merged, derniere_maj: maj }
       onLocalUpdate({ ...p, ...patch })
       await supabase.from('prospects').update(patch).eq('id', id)
@@ -238,14 +256,17 @@ export default function ProspectsTable({ prospects, types, segmentLabel, onOpen,
           <div className="filters-row-2-actions">
             <button className="btn-primary new-fiche-btn" onClick={() => onOpen({ _isNew: true, segment: segmentLabel, type: '', statut: 'À contacter', lead_chaud: false, stand_by: false, important: false, a_suivre: false, fft_engage: 'Non', action_commentaire: '', prochaine_action: null, assigned_to: null })} title="Créer une nouvelle fiche client">＋ Nouvelle fiche</button>
             <button className="undo-btn" onClick={undoLast} disabled={undoStack.length === 0} title="Annuler la dernière action (comme Ctrl+Z)">↶ Annuler</button>
+            <button className="undo-btn" onClick={redoLast} disabled={redoStack.length === 0} title="Rétablir l'action annulée (comme Ctrl+Y)">↷ Rétablir</button>
             {selectedIds.size > 0 && (
               <>
+                <button className="btn-secondary deselect-btn" onClick={() => setSelectedIds(new Set())} title="Décocher toutes les lignes sélectionnées">✕ Désélectionner ({selectedIds.size})</button>
                 <select className="bulk-select" value="" onChange={(e) => { if (e.target.value) applyBulkField('statut', e.target.value) }} title="Attribuer ce statut aux lignes sélectionnées">
                   <option value="">Statut ▾ ({selectedIds.size})</option>
                   {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-                <select className="bulk-select" value="" onChange={(e) => { if (e.target.value) applyBulkField('prochaine_action', e.target.value) }} title="Attribuer cette action aux lignes sélectionnées">
+                <select className="bulk-select" value="" onChange={(e) => { const v = e.target.value; if (v) applyBulkField('prochaine_action', v === '__none__' ? null : v) }} title="Attribuer cette action aux lignes sélectionnées">
                   <option value="">Action ▾ ({selectedIds.size})</option>
+                  <option value="__none__">—</option>
                   {PROCHAINES_ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                 </select>
                 <button className="btn-secondary bulk-comment-btn" onClick={() => setBulkOpen(true)}>💬 Commentaire ({selectedIds.size})</button>
